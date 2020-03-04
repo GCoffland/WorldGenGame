@@ -11,7 +11,9 @@ public class ChunkBehavior : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        Resources.Load<GameObject>(blockPath);
+        block = Resources.Load<GameObject>(blockPath);
+        GenerateChunk();
+        CombineBlockMeshes();
     }
 
     // Update is called once per frame
@@ -28,9 +30,26 @@ public class ChunkBehavior : MonoBehaviour
             {
                 for (int k = chunkBounds.min.z; k < chunkBounds.max.z; k++)
                 {
-                    Instantiate<GameObject>(block, new Vector3(i, j, k), Quaternion.identity);
+                    Instantiate<GameObject>(block, new Vector3(i, j, k), Quaternion.identity, this.transform);
                 }
             }
         }
+    }
+
+    void CombineBlockMeshes()
+    {
+        MeshFilter[] meshFilters = GetComponentsInChildren<MeshFilter>();
+        CombineInstance[] combine = new CombineInstance[meshFilters.Length];
+
+        for(int i = 0; i < meshFilters.Length; i++)
+        {
+            combine[i].mesh = meshFilters[i].sharedMesh;
+            combine[i].transform = meshFilters[i].transform.localToWorldMatrix;
+            meshFilters[i].gameObject.SetActive(false);
+        }
+        
+        transform.GetComponent<MeshFilter>().mesh = new Mesh();
+        transform.GetComponent<MeshFilter>().mesh.CombineMeshes(combine);
+        transform.gameObject.SetActive(true);
     }
 }
