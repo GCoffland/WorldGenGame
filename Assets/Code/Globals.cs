@@ -19,6 +19,14 @@ public class Globals
         return ret;
     }
 
+    public static Material[] getAllMaterialsInOrder()
+    {
+        Material[] ret = new Material[BLOCK_TYPE.NUM_OF_BLOCK_TYPES];
+        ret[0] = BLOCK_TYPE.DIRT.GetComponent<MeshRenderer>().material;
+        ret[1] = BLOCK_TYPE.GRASS.GetComponent<MeshRenderer>().material;
+        return ret;
+    }
+
     public static void setAllBlockTypeActiveState(bool val)
     {
         BLOCK_TYPE.DIRT.SetActive(val);
