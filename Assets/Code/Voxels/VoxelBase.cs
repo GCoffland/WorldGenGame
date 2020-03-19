@@ -35,45 +35,36 @@ public class VoxelBase
 
     protected VoxelBase(){} // private constructor
 
-    public static List<Vector3> makeVoxelVertsAt(Vector3 pos)
+    public static List<Vector3> makeVoxelSideVertsAt(Vector3 pos, VoxelData.DIRECTION dir)
     {
         List<Vector3> vertices = new List<Vector3>();
-        for(int i = 0; i < 6; i++)
-        {
-            vertices.Add(pos + instance.voxelVertexes[instance.voxelFaces[i, 0]]);
-            vertices.Add(pos + instance.voxelVertexes[instance.voxelFaces[i, 1]]);
-            vertices.Add(pos + instance.voxelVertexes[instance.voxelFaces[i, 2]]);
-            vertices.Add(pos + instance.voxelVertexes[instance.voxelFaces[i, 3]]);
-        }
+        vertices.Add(pos + instance.voxelVertexes[instance.voxelFaces[(int)dir, 0]]);
+        vertices.Add(pos + instance.voxelVertexes[instance.voxelFaces[(int)dir, 1]]);
+        vertices.Add(pos + instance.voxelVertexes[instance.voxelFaces[(int)dir, 2]]);
+        vertices.Add(pos + instance.voxelVertexes[instance.voxelFaces[(int)dir, 3]]);
         return vertices;
     }
 
     public static List<Vector2> getVoxelUVs()
     {
         List<Vector2> uvs = new List<Vector2>();
-        for(int i = 0; i < 6; i++)
-        {
-            uvs.Add(instance.voxelUVs[0]);
-            uvs.Add(instance.voxelUVs[1]);
-            uvs.Add(instance.voxelUVs[2]);
-            uvs.Add(instance.voxelUVs[3]);
-        }
+        uvs.Add(instance.voxelUVs[0]);
+        uvs.Add(instance.voxelUVs[1]);
+        uvs.Add(instance.voxelUVs[2]);
+        uvs.Add(instance.voxelUVs[3]);
         return uvs;
     }
 
     public static List<int> getTriangles(ref int vertexindex) // takes in vertex index, because if you are doing multiple blocks, you need to share vertex indexes accross all calls.
     {
         List<int> triangles = new List<int>();
-        for (int i = 0; i < 6; i++)
-        {
-            triangles.Add(vertexindex); // get an array of all the indexes of all the voxels added in the vertices list in order (triangle order)
-            triangles.Add(vertexindex + 1);
-            triangles.Add(vertexindex + 2);
-            triangles.Add(vertexindex + 3);
-            triangles.Add(vertexindex + 2);
-            triangles.Add(vertexindex + 1);
-            vertexindex += 4;
-        }
+        triangles.Add(vertexindex); // get an array of all the indexes of all the voxels added in the vertices list in order (triangle order)
+        triangles.Add(vertexindex + 1);
+        triangles.Add(vertexindex + 2);
+        triangles.Add(vertexindex + 3);
+        triangles.Add(vertexindex + 2);
+        triangles.Add(vertexindex + 1);
+        vertexindex += 4;
         return triangles;
     }
 }

@@ -28,7 +28,7 @@ public class ChunkBehavior : MonoBehaviour
                     {
                         if(isVoxelSideVisible(p, VoxelData.DIRECTIONVECTORS[(VoxelData.DIRECTION)d], model))
                         {
-                            vertices.AddRange(VoxelBase.makeVoxelVertsAt(p).ToArray());
+                            vertices.AddRange(VoxelBase.makeVoxelSideVertsAt(p, (VoxelData.DIRECTION)d).ToArray());
                             uvs.AddRange(VoxelBase.getVoxelUVs().ToArray());
                             triangles.AddRange(VoxelBase.getTriangles(ref vertexindex).ToArray());
                         }
@@ -75,7 +75,7 @@ public class ChunkBehavior : MonoBehaviour
         if (pos.x == bounds.xMin && dir == VoxelData.DIRECTIONVECTORS[VoxelData.DIRECTION.X_NEG])
         {
             return true;
-        }else if(pos.x == bounds.xMax && dir == VoxelData.DIRECTIONVECTORS[VoxelData.DIRECTION.X_POS])
+        }else if(pos.x == bounds.xMax - 1 && dir == VoxelData.DIRECTIONVECTORS[VoxelData.DIRECTION.X_POS])
         {
             return true;
         }
@@ -83,7 +83,7 @@ public class ChunkBehavior : MonoBehaviour
         {
             return true;
         }
-        else if (pos.y == bounds.yMax && dir == VoxelData.DIRECTIONVECTORS[VoxelData.DIRECTION.Y_POS])
+        else if (pos.y == bounds.yMax - 1 && dir == VoxelData.DIRECTIONVECTORS[VoxelData.DIRECTION.Y_POS])
         {
             return true;
         }
@@ -91,7 +91,7 @@ public class ChunkBehavior : MonoBehaviour
         {
             return true;
         }
-        else if (pos.z == bounds.zMax && dir == VoxelData.DIRECTIONVECTORS[VoxelData.DIRECTION.Z_POS])
+        else if (pos.z == bounds.zMax - 1 && dir == VoxelData.DIRECTIONVECTORS[VoxelData.DIRECTION.Z_POS])
         {
             return true;
         }
