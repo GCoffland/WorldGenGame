@@ -4,65 +4,35 @@ using UnityEngine;
 
 public class ChunkBehavior : MonoBehaviour
 {
-    public BoundsInt chunkBounds;
+    public MeshRenderer meshRenderer;
+    public MeshFilter meshFilter;
 
     // Start is called before the first frame update
     void Start()
     {
-        GenerateChunk();
-    }
+        int vertexindex = 0;
+        List<Vector3> vertices = new List<Vector3>();
+        List<int> triangles = new List<int>();
+        List<Vector2> uvs = new List<Vector2>();
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
-
-    void GenerateChunk()
-    {
-        Globals.setAllBlockTypeActiveState(true);
-        MeshFilter[] meshFilters = Globals.getAllTypesOfMeshFilters();
-        List<List<CombineInstance>> combineInstances = new List<List<CombineInstance>>();
-        for(int i = 0; i < Globals.BLOCK_TYPE.NUM_OF_BLOCK_TYPES; i++)
+        for(int j = 0; j < 6; j++)
         {
-            combineInstances.Add(new List<CombineInstance>());
-        }
-
-        for (int i = chunkBounds.min.x; i < chunkBounds.max.x; i++)
-        {
-            for (int j = chunkBounds.min.y; j < chunkBounds.max.y; j++)
+            for (int i = 0; i < 6; i++)
             {
-                for (int k = chunkBounds.min.z; k < chunkBounds.max.z; k++)
-                {
-                    int num = Random.Range(0, Globals.BLOCK_TYPE.NUM_OF_BLOCK_TYPES);
-                    meshFilters[num].gameObject.transform.position = new Vector3(i, j, k);
-                    CombineInstance temp = new CombineInstance();
-                    temp.mesh = meshFilters[num].sharedMesh;
-                    temp.transform = meshFilters[num].transform.localToWorldMatrix;
-                    combineInstances[num].Add(temp);
-                }
+                int triangleindex = VoxelData.voxelFaces[j, i];
+                vertices.Add(VoxelData.voxelVertexes[triangleindex]);
+                triangles.Add(vertexindex);
+                uvs.Add(VoxelData.voxelUVs[i]);
+                vertexindex++;
             }
         }
-        Mesh[] combinedMeshes = new Mesh[Globals.BLOCK_TYPE.NUM_OF_BLOCK_TYPES];
-
-        for(int i = 0; i < Globals.BLOCK_TYPE.NUM_OF_BLOCK_TYPES; i++)
-        {
-            combinedMeshes[i] = new Mesh();
-            combinedMeshes[i].CombineMeshes(combineInstances[i].ToArray());
-        }
-
-        CombineInstance[] finalCombines = new CombineInstance[Globals.BLOCK_TYPE.NUM_OF_BLOCK_TYPES];
-
-        for (int i = 0; i < Globals.BLOCK_TYPE.NUM_OF_BLOCK_TYPES; i++)
-        {
-            finalCombines[i].mesh = combinedMeshes[i];
-            finalCombines[i].transform = gameObject.transform.localToWorldMatrix;
-        }
-
-        transform.GetComponent<MeshFilter>().mesh = new Mesh();
-        transform.GetComponent<MeshFilter>().mesh.CombineMeshes(finalCombines, false);
-        transform.GetComponent<MeshRenderer>().materials = Globals.getAllMaterialsInOrder();
-        transform.gameObject.SetActive(true);
-        Globals.setAllBlockTypeActiveState(false);
+        
+        Mesh mesh = new Mesh();
+        mesh.vertices = vertices.ToArray();
+        mesh.triangles = triangles.ToArray();
+        mesh.uv = uvs.ToArray();
+        mesh.RecalculateNormals();
+        meshFilter.mesh = mesh;
     }
+    
 }
