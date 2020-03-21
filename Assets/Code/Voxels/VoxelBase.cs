@@ -4,8 +4,19 @@ using UnityEngine;
 
 public class VoxelBase
 {
-    protected static VoxelBase instance = new VoxelBase();
-    protected readonly Vector3[] voxelVertexes = new Vector3[]
+    public readonly static VoxelBase instance = new VoxelBase();
+
+    virtual protected Hashtable textureOrigins { get; } = new Hashtable()
+    {
+        {DIRECTION.X_NEG, new Vector2(3 * VoxelData.TNF, 3 * VoxelData.TNF)},
+        {DIRECTION.X_POS, new Vector2(3 * VoxelData.TNF, 3 * VoxelData.TNF)},
+        {DIRECTION.Y_NEG, new Vector2(3 * VoxelData.TNF, 3 * VoxelData.TNF)},
+        {DIRECTION.Y_POS, new Vector2(3 * VoxelData.TNF, 3 * VoxelData.TNF)},
+        {DIRECTION.Z_NEG, new Vector2(3 * VoxelData.TNF, 3 * VoxelData.TNF)},
+        {DIRECTION.Z_POS, new Vector2(3 * VoxelData.TNF, 3 * VoxelData.TNF)},
+    };
+
+    virtual protected Vector3[] voxelVertexes { get; } = new Vector3[]
     {
         new Vector3(0,0,0), // 0
         new Vector3(0,0,1), // 1
@@ -16,7 +27,7 @@ public class VoxelBase
         new Vector3(1,1,0), // 6
         new Vector3(1,1,1), // 7
     };
-    protected readonly int[,] voxelFaces = new int[6, 4] // indexes corresponds to DIRECTION enum.
+    virtual protected int[,] voxelFaces { get; } = new int[6, 4] // indexes corresponds to DIRECTION enum.
     {
         {5,7,1,3}, // Z+ face
         {0,2,4,6}, // Z- face
@@ -25,17 +36,17 @@ public class VoxelBase
         {4,6,5,7}, // X+ face
         {1,3,0,2}, // X- face
     };
-    protected readonly Vector2[] voxelUVs = new Vector2[4]
+    virtual protected Vector2[] voxelUVs { get; } = new Vector2[4]
     {
-        new Vector2(0,0),
-        new Vector2(0,1),
-        new Vector2(1,0),
-        new Vector2(1,1),
+        new Vector2(0,0), //sides
+        new Vector2(0, 1 * VoxelData.TNF),
+        new Vector2(VoxelData.TNF, 0),
+        new Vector2(VoxelData.TNF, VoxelData.TNF),
     };
 
     protected VoxelBase(){} // private constructor
 
-    public static List<Vector3> makeVoxelSideVertsAt(Vector3 pos, VoxelData.DIRECTION dir)
+    public virtual List<Vector3> makeVoxelSideVertsAt(Vector3 pos, DIRECTION dir)
     {
         List<Vector3> vertices = new List<Vector3>();
         vertices.Add(pos + instance.voxelVertexes[instance.voxelFaces[(int)dir, 0]]);
@@ -45,17 +56,17 @@ public class VoxelBase
         return vertices;
     }
 
-    public static List<Vector2> getVoxelUVs()
+    public virtual List<Vector2> getVoxelUVs(DIRECTION dir)
     {
         List<Vector2> uvs = new List<Vector2>();
-        uvs.Add(instance.voxelUVs[0]);
-        uvs.Add(instance.voxelUVs[1]);
-        uvs.Add(instance.voxelUVs[2]);
-        uvs.Add(instance.voxelUVs[3]);
+        uvs.Add((Vector2)textureOrigins[dir] + instance.voxelUVs[0]);
+        uvs.Add((Vector2)textureOrigins[dir] + instance.voxelUVs[1]);
+        uvs.Add((Vector2)textureOrigins[dir] + instance.voxelUVs[2]);
+        uvs.Add((Vector2)textureOrigins[dir] + instance.voxelUVs[3]);
         return uvs;
     }
 
-    public static List<int> getTriangles(ref int vertexindex) // takes in vertex index, because if you are doing multiple blocks, you need to share vertex indexes accross all calls.
+    public virtual List<int> getTriangles(ref int vertexindex) // takes in vertex index, because if you are doing multiple blocks, you need to share vertex indexes accross all calls.
     {
         List<int> triangles = new List<int>();
         triangles.Add(vertexindex); // get an array of all the indexes of all the voxels added in the vertices list in order (triangle order)

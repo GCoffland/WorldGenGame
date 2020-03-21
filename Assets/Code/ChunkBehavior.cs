@@ -7,16 +7,70 @@ public class ChunkBehavior : MonoBehaviour
     public MeshRenderer meshRenderer;
     public MeshFilter meshFilter;
     public BoundsInt bounds;
+    public MeshCollider meshCollider;
+
+    private VOXELTYPE[,,] model;
 
     // Start is called before the first frame update
+
     void Start()
+    {
+        generateChunk();
+    }
+
+    void generateChunk()
+    {
+        model = ChunkModelGenerator.generateSimpleRandom(bounds);
+        StartCoroutine(updateMeshRout());
+    }
+
+    IEnumerator updateMeshRout()
     {
         int vertexindex = 0;
         List<Vector3> vertices = new List<Vector3>();
         List<Vector2> uvs = new List<Vector2>();
         List<int> triangles = new List<int>();
-        VoxelData.VOXELTYPE[,,] model = makeModel();
+        for (int x = bounds.xMin; x < bounds.xMax; x++) // put stuff in the model
+        {
+            for (int y = bounds.yMin; y < bounds.yMax; y++)
+            {
+                yield return 0;
+                for (int z = bounds.zMin; z < bounds.zMax; z++)
+                {
+                    Vector3 p = new Vector3(x, y, z);
+                    if (model[x, y, z] != VOXELTYPE.NONE)
+                    {
+                        for (int d = 0; d < 6; d++)
+                        {
+                            if (ChunkModelGenerator.isVoxelSideVisible(p, VoxelData.DIRECTIONVECTORS[(DIRECTION)d], model, bounds))
+                            {
+                                System.Reflection.FieldInfo fieldinfo = VoxelData.VoxelTypes[model[x, y, z]].GetField("instance");
+                                VoxelBase vb = (VoxelBase)fieldinfo.GetValue(fieldinfo);
+                                vertices.AddRange(vb.makeVoxelSideVertsAt(p, (DIRECTION)d).ToArray());
+                                uvs.AddRange(vb.getVoxelUVs((DIRECTION)d).ToArray());
+                                triangles.AddRange(vb.getTriangles(ref vertexindex).ToArray());
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
+        Mesh mesh = new Mesh();
+        mesh.SetVertices(vertices);
+        mesh.SetUVs(0, uvs);
+        mesh.SetTriangles(triangles, 0);
+        mesh.RecalculateNormals();
+        meshFilter.mesh = mesh;
+        meshCollider.sharedMesh = mesh;
+    }
+
+    void updateMesh()
+    {
+        int vertexindex = 0;
+        List<Vector3> vertices = new List<Vector3>();
+        List<Vector2> uvs = new List<Vector2>();
+        List<int> triangles = new List<int>();
         for (int x = bounds.xMin; x < bounds.xMax; x++) // put stuff in the model
         {
             for (int y = bounds.yMin; y < bounds.yMax; y++)
@@ -24,77 +78,37 @@ public class ChunkBehavior : MonoBehaviour
                 for (int z = bounds.zMin; z < bounds.zMax; z++)
                 {
                     Vector3 p = new Vector3(x, y, z);
-                    for(int d = 0; d < 6; d++)
+                    if (model[x, y, z] != VOXELTYPE.NONE)
                     {
-                        if(isVoxelSideVisible(p, VoxelData.DIRECTIONVECTORS[(VoxelData.DIRECTION)d], model))
+                        for (int d = 0; d < 6; d++)
                         {
-                            vertices.AddRange(VoxelBase.makeVoxelSideVertsAt(p, (VoxelData.DIRECTION)d).ToArray());
-                            uvs.AddRange(VoxelBase.getVoxelUVs().ToArray());
-                            triangles.AddRange(VoxelBase.getTriangles(ref vertexindex).ToArray());
+                            if (ChunkModelGenerator.isVoxelSideVisible(p, VoxelData.DIRECTIONVECTORS[(DIRECTION)d], model, bounds))
+                            {
+                                System.Reflection.FieldInfo fieldinfo = VoxelData.VoxelTypes[model[x, y, z]].GetField("instance");
+                                VoxelBase vb = (VoxelBase)fieldinfo.GetValue(fieldinfo);
+                                vertices.AddRange(vb.makeVoxelSideVertsAt(p, (DIRECTION)d).ToArray());
+                                uvs.AddRange(vb.getVoxelUVs((DIRECTION)d).ToArray());
+                                triangles.AddRange(vb.getTriangles(ref vertexindex).ToArray());
+                            }
                         }
                     }
                 }
             }
         }
+
         Mesh mesh = new Mesh();
-        mesh.vertices = vertices.ToArray();
-        mesh.uv = uvs.ToArray();
-        mesh.triangles = triangles.ToArray();
+        mesh.SetVertices(vertices);
+        mesh.SetUVs(0, uvs);
+        mesh.SetTriangles(triangles, 0);
         mesh.RecalculateNormals();
         meshFilter.mesh = mesh;
+        meshCollider.sharedMesh = mesh;
     }
 
-    public VoxelData.VOXELTYPE[,,] makeModel()
+    public void setVoxel(Vector3Int pos, VOXELTYPE blocktype)
     {
-        VoxelData.VOXELTYPE[,,] model = new VoxelData.VOXELTYPE[bounds.size.x, bounds.size.y, bounds.size.z];
-
-        for (int x = bounds.xMin; x < bounds.xMax; x++) // asemble the model
-        {
-            for (int y = bounds.yMin; y < bounds.yMax; y++)
-            {
-                for (int z = bounds.zMin; z < bounds.zMax; z++)
-                {
-                    float ran = Random.Range(0f, 1f);
-                    if (ran < 0.2f)
-                    {
-                        model[x, y, z] = VoxelData.VOXELTYPE.DIRT;
-                    }
-                    else
-                    {
-                        model[x, y, z] = VoxelData.VOXELTYPE.NONE;
-                    }
-                        
-                }
-            }
-        }
-        return model;
-    }
-
-    public bool isVoxelSideVisible(Vector3 pos, Vector3 dir, VoxelData.VOXELTYPE[,,] model)
-    {
-        if (pos.x == bounds.xMin && dir == VoxelData.DIRECTIONVECTORS[VoxelData.DIRECTION.X_NEG])
-        {
-            return true;
-        }else if(pos.x == bounds.xMax - 1 && dir == VoxelData.DIRECTIONVECTORS[VoxelData.DIRECTION.X_POS])
-        {
-            return true;
-        }
-        else if (pos.y == bounds.yMin && dir == VoxelData.DIRECTIONVECTORS[VoxelData.DIRECTION.Y_NEG])
-        {
-            return true;
-        }
-        else if (pos.y == bounds.yMax - 1 && dir == VoxelData.DIRECTIONVECTORS[VoxelData.DIRECTION.Y_POS])
-        {
-            return true;
-        }
-        else if (pos.z == bounds.zMin && dir == VoxelData.DIRECTIONVECTORS[VoxelData.DIRECTION.Z_NEG])
-        {
-            return true;
-        }
-        else if (pos.z == bounds.zMax - 1 && dir == VoxelData.DIRECTIONVECTORS[VoxelData.DIRECTION.Z_POS])
-        {
-            return true;
-        }
-        return false;
+        Vector3Int idexer = pos - new Vector3Int((int)transform.position.x, (int)transform.position.y, (int)transform.position.z);
+        model[idexer.x, idexer.y, idexer.z] = blocktype;
+        updateMesh();
     }
 }

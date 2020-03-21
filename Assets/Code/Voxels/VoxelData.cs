@@ -3,16 +3,30 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 
+
+
+
+// GLOBAL ENUMS
+public enum DIRECTION
+{
+    Z_POS,
+    Z_NEG,
+    Y_POS,
+    Y_NEG,
+    X_POS,
+    X_NEG,
+};
+
+public enum VOXELTYPE
+{
+    NONE,
+    DEBUG,
+    DIRT,
+};
+
 public static class VoxelData
 {
-    public enum DIRECTION{
-        Z_POS,
-        Z_NEG,
-        Y_POS,
-        Y_NEG,
-        X_POS,
-        X_NEG,
-    };
+    public const float TNF = 0.25f; // Texture Normalization Factor (1 / the number of textures in the x direction)
 
     public static Dictionary<DIRECTION, Vector3> DIRECTIONVECTORS = new Dictionary<DIRECTION, Vector3>()
     {
@@ -24,14 +38,23 @@ public static class VoxelData
         {DIRECTION.X_NEG, new Vector3(-1,0,0)},
     };
 
-    public enum VOXELTYPE
+    public static Dictionary<VOXELTYPE, Type> VoxelTypes = new Dictionary<VOXELTYPE, Type>()
     {
-        NONE,
-        DIRT,
-    };
-
-    public static Dictionary<VOXELTYPE, Type> VOXELS = new Dictionary<VOXELTYPE, Type>()
-    {
+        {VOXELTYPE.NONE, null},
+        {VOXELTYPE.DEBUG, typeof(VoxelBase)},
         {VOXELTYPE.DIRT, typeof(DirtVoxel)},
     };
+
+    public static VoxelBase getVoxelType(VOXELTYPE t)
+    {
+        switch (t)
+        {
+            case (VOXELTYPE.DEBUG):
+                return VoxelBase.instance;
+            case (VOXELTYPE.DIRT):
+                return DirtVoxel.instance;
+            default:
+                return null;
+        }
+    }
 }
