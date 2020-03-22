@@ -28,14 +28,14 @@ public static class VoxelData
 {
     public const float TNF = 0.25f; // Texture Normalization Factor (1 / the number of textures in the x direction)
 
-    public static Dictionary<DIRECTION, Vector3> DIRECTIONVECTORS = new Dictionary<DIRECTION, Vector3>()
+    public static Dictionary<DIRECTION, Vector3Int> DIRECTIONVECTORS = new Dictionary<DIRECTION, Vector3Int>()
     {
-        {DIRECTION.Z_POS, new Vector3(0,0,1)},
-        {DIRECTION.Z_NEG, new Vector3(0,0,-1)},
-        {DIRECTION.Y_POS, new Vector3(0,1,0)},
-        {DIRECTION.Y_NEG, new Vector3(0,-1,0)},
-        {DIRECTION.X_POS, new Vector3(1,0,0)},
-        {DIRECTION.X_NEG, new Vector3(-1,0,0)},
+        {DIRECTION.Z_POS, new Vector3Int(0,0,1)},
+        {DIRECTION.Z_NEG, new Vector3Int(0,0,-1)},
+        {DIRECTION.Y_POS, new Vector3Int(0,1,0)},
+        {DIRECTION.Y_NEG, new Vector3Int(0,-1,0)},
+        {DIRECTION.X_POS, new Vector3Int(1,0,0)},
+        {DIRECTION.X_NEG, new Vector3Int(-1,0,0)},
     };
 
     public static Dictionary<VOXELTYPE, Type> VoxelTypes = new Dictionary<VOXELTYPE, Type>()

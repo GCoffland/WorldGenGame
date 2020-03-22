@@ -26,7 +26,7 @@ public class WorldBehavior : MonoBehaviour
         
     }
 
-    private const int generationRadius = 10;
+    private const int generationRadius = 25;
 
     IEnumerator loadChunksAroundPlayer(GameObject player)
     {

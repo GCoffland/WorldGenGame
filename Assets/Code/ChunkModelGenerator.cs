@@ -33,40 +33,29 @@ public static class ChunkModelGenerator
         return model;
     }
 
-    public static bool isVoxelSideVisible(Vector3 pos, Vector3 dir, VOXELTYPE[,,] model, BoundsInt bounds)
+    public static VOXELTYPE[,,] generateSimpleGround(BoundsInt bounds)
     {
-        if (model[(int)pos.x, (int)pos.y, (int)pos.z] == VOXELTYPE.NONE)
+        VOXELTYPE[,,] model = new VOXELTYPE[bounds.size.x, bounds.size.y, bounds.size.z];
+        Random.InitState(seed);
+
+        for (int x = 0; x < bounds.size.x; x++) // asemble the model
         {
-            return false;
+            for (int y = 0; y < bounds.size.y; y++)
+            {
+                for (int z = 0; z < bounds.size.z; z++)
+                {
+                    if (bounds.min.y + y < 0)
+                    {
+                        model[x, y, z] = VOXELTYPE.DIRT;
+                    }
+                    else
+                    {
+                        model[x, y, z] = VOXELTYPE.NONE;
+                    }
+
+                }
+            }
         }
-        else if (pos.x == bounds.xMin && dir == VoxelData.DIRECTIONVECTORS[DIRECTION.X_NEG])
-        {
-            return true;
-        }
-        else if (pos.x == bounds.xMax - 1 && dir == VoxelData.DIRECTIONVECTORS[DIRECTION.X_POS])
-        {
-            return true;
-        }
-        else if (pos.y == bounds.yMin && dir == VoxelData.DIRECTIONVECTORS[DIRECTION.Y_NEG])
-        {
-            return true;
-        }
-        else if (pos.y == bounds.yMax - 1 && dir == VoxelData.DIRECTIONVECTORS[DIRECTION.Y_POS])
-        {
-            return true;
-        }
-        else if (pos.z == bounds.zMin && dir == VoxelData.DIRECTIONVECTORS[DIRECTION.Z_NEG])
-        {
-            return true;
-        }
-        else if (pos.z == bounds.zMax - 1 && dir == VoxelData.DIRECTIONVECTORS[DIRECTION.Z_POS])
-        {
-            return true;
-        }
-        else if (model[(int)(pos.x + dir.x), (int)(pos.y + dir.y), (int)(pos.z + dir.z)] == VOXELTYPE.NONE)
-        {
-            return true;
-        }
-        return false;
+        return model;
     }
 }

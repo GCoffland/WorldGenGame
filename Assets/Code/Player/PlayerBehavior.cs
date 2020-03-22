@@ -5,10 +5,26 @@ using UnityEngine;
 public class PlayerBehavior : MonoBehaviour
 {
     public Rigidbody rb;
+    public CapsuleCollider cc;
     public Camera cam;
     public GameObject blockSelector;
 
     private GameObject selectedBlock;
+    private bool internalNoClip = true;
+    private bool noClip
+    {
+        get
+        {
+            return internalNoClip;
+        }
+        set
+        {
+            cc.enabled = !cc.enabled;
+            rb.useGravity = !rb.useGravity;
+            rb.freezeRotation = !rb.freezeRotation;
+            internalNoClip = value;
+        }
+    }
 
     private const float SPEED = 10f;
     private const float INTERACTDISTANCE = 10f;
@@ -16,14 +32,24 @@ public class PlayerBehavior : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        cc.enabled = !noClip;
+        rb.useGravity = !noClip;
+        rb.freezeRotation = !noClip;
         Cursor.lockState = CursorLockMode.Locked;
     }
-
+    
     // Update is called once per frame
     void Update()
     {
-        transform.eulerAngles = transform.eulerAngles + new Vector3(-Input.GetAxis("Mouse Y"), Input.GetAxis("Mouse X"), 0);
-        rb.velocity = (transform.rotation * new Vector3(Input.GetAxis("Horizontal"), Input.GetAxis("Jump"), Input.GetAxis("Vertical"))) * SPEED;
+        lookAround();
+        if (noClip)
+        {
+            moveNoClip();
+        }
+        else
+        {
+            move();
+        }
         Vector3Int? v = selectBlock();
         if (Input.GetButtonDown("Fire1"))
         {
@@ -31,6 +57,37 @@ public class PlayerBehavior : MonoBehaviour
             {
                 selectedBlock.GetComponent<ChunkBehavior>().setVoxel((Vector3Int)v, VOXELTYPE.NONE);
             }
+        }
+        if (Input.GetButtonDown("NoClip"))
+        {
+            noClip = !noClip;
+        }
+    }
+
+    private Vector3 rotation = new Vector3(0, 0, 0);
+
+    private void lookAround()
+    {
+        rotation.x += -Input.GetAxis("Mouse Y");
+        rotation.y += Input.GetAxis("Mouse X");
+        rotation.x = Mathf.Clamp(rotation.x, -89.99f, 89.99f);
+        transform.rotation = Quaternion.Euler(rotation);
+    }
+
+    private void moveNoClip()
+    {
+        rb.velocity = (transform.rotation * new Vector3(Input.GetAxis("Horizontal"), Input.GetAxis("Jump"), Input.GetAxis("Vertical"))) * SPEED;
+    }
+
+    private void move()
+    {
+        Vector3 temp = new Vector3(Input.GetAxis("Horizontal"), 0, Input.GetAxis("Vertical")) * SPEED;
+        temp = transform.rotation * temp;
+        temp.y = rb.velocity.y;
+        rb.velocity = temp;
+        if (Input.GetButtonDown("Jump"))
+        {
+            rb.velocity += Vector3.up * 10;
         }
     }
 

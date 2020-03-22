@@ -15,12 +15,13 @@ public class ChunkBehavior : MonoBehaviour
 
     void Start()
     {
+        bounds.position = Vector3Int.RoundToInt(transform.position);
         generateChunk();
     }
 
     void generateChunk()
     {
-        model = ChunkModelGenerator.generateSimpleRandom(bounds);
+        model = ChunkModelGenerator.generateSimpleGround(bounds);
         StartCoroutine(updateMeshRout());
     }
 
@@ -30,19 +31,19 @@ public class ChunkBehavior : MonoBehaviour
         List<Vector3> vertices = new List<Vector3>();
         List<Vector2> uvs = new List<Vector2>();
         List<int> triangles = new List<int>();
-        for (int x = bounds.xMin; x < bounds.xMax; x++) // put stuff in the model
+        for (int x = 0; x < bounds.size.x; x++) // put stuff in the model
         {
-            for (int y = bounds.yMin; y < bounds.yMax; y++)
+            for (int y = 0; y < bounds.size.y; y++)
             {
                 yield return 0;
-                for (int z = bounds.zMin; z < bounds.zMax; z++)
+                for (int z = 0; z < bounds.size.z; z++)
                 {
-                    Vector3 p = new Vector3(x, y, z);
+                    Vector3Int p = new Vector3Int(x, y, z);
                     if (model[x, y, z] != VOXELTYPE.NONE)
                     {
                         for (int d = 0; d < 6; d++)
                         {
-                            if (ChunkModelGenerator.isVoxelSideVisible(p, VoxelData.DIRECTIONVECTORS[(DIRECTION)d], model, bounds))
+                            if (isVoxelSideVisible(p, VoxelData.DIRECTIONVECTORS[(DIRECTION)d], bounds))
                             {
                                 System.Reflection.FieldInfo fieldinfo = VoxelData.VoxelTypes[model[x, y, z]].GetField("instance");
                                 VoxelBase vb = (VoxelBase)fieldinfo.GetValue(fieldinfo);
@@ -71,18 +72,18 @@ public class ChunkBehavior : MonoBehaviour
         List<Vector3> vertices = new List<Vector3>();
         List<Vector2> uvs = new List<Vector2>();
         List<int> triangles = new List<int>();
-        for (int x = bounds.xMin; x < bounds.xMax; x++) // put stuff in the model
+        for (int x = 0; x < bounds.size.x; x++) // put stuff in the model
         {
-            for (int y = bounds.yMin; y < bounds.yMax; y++)
+            for (int y = 0; y < bounds.size.y; y++)
             {
-                for (int z = bounds.zMin; z < bounds.zMax; z++)
+                for (int z = 0; z < bounds.size.z; z++)
                 {
-                    Vector3 p = new Vector3(x, y, z);
+                    Vector3Int p = new Vector3Int(x, y, z);
                     if (model[x, y, z] != VOXELTYPE.NONE)
                     {
                         for (int d = 0; d < 6; d++)
                         {
-                            if (ChunkModelGenerator.isVoxelSideVisible(p, VoxelData.DIRECTIONVECTORS[(DIRECTION)d], model, bounds))
+                            if (isVoxelSideVisible(p, VoxelData.DIRECTIONVECTORS[(DIRECTION)d], bounds))
                             {
                                 System.Reflection.FieldInfo fieldinfo = VoxelData.VoxelTypes[model[x, y, z]].GetField("instance");
                                 VoxelBase vb = (VoxelBase)fieldinfo.GetValue(fieldinfo);
@@ -103,6 +104,43 @@ public class ChunkBehavior : MonoBehaviour
         mesh.RecalculateNormals();
         meshFilter.mesh = mesh;
         meshCollider.sharedMesh = mesh;
+    }
+
+    public bool isVoxelSideVisible(Vector3Int pos, Vector3Int dir, BoundsInt bounds)
+    {
+        if (model[pos.x, pos.y, pos.z] == VOXELTYPE.NONE)
+        {
+            return false;
+        }
+        else if (pos.x == 0 && dir == VoxelData.DIRECTIONVECTORS[DIRECTION.X_NEG])
+        {
+            return true;
+        }
+        else if (pos.x == bounds.size.x - 1 && dir == VoxelData.DIRECTIONVECTORS[DIRECTION.X_POS])
+        {
+            return true;
+        }
+        else if (pos.y == 0 && dir == VoxelData.DIRECTIONVECTORS[DIRECTION.Y_NEG])
+        {
+            return true;
+        }
+        else if (pos.y == bounds.size.y - 1 && dir == VoxelData.DIRECTIONVECTORS[DIRECTION.Y_POS])
+        {
+            return true;
+        }
+        else if (pos.z == 0 && dir == VoxelData.DIRECTIONVECTORS[DIRECTION.Z_NEG])
+        {
+            return true;
+        }
+        else if (pos.z == bounds.size.z - 1 && dir == VoxelData.DIRECTIONVECTORS[DIRECTION.Z_POS])
+        {
+            return true;
+        }
+        else if (model[(pos.x + dir.x), (pos.y + dir.y), (pos.z + dir.z)] == VOXELTYPE.NONE)
+        {
+            return true;
+        }
+        return false;
     }
 
     public void setVoxel(Vector3Int pos, VOXELTYPE blocktype)
