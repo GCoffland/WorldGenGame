@@ -22,6 +22,7 @@ public enum VOXELTYPE
     NONE,
     DEBUG,
     DIRT,
+    GRASS,
 };
 
 public static class VoxelData
@@ -43,6 +44,7 @@ public static class VoxelData
         {VOXELTYPE.NONE, null},
         {VOXELTYPE.DEBUG, typeof(VoxelBase)},
         {VOXELTYPE.DIRT, typeof(DirtVoxel)},
+        {VOXELTYPE.GRASS, typeof(GrassVoxel)},
     };
 
     public static VoxelBase getVoxelType(VOXELTYPE t)
@@ -53,6 +55,8 @@ public static class VoxelData
                 return VoxelBase.instance;
             case (VOXELTYPE.DIRT):
                 return DirtVoxel.instance;
+            case (VOXELTYPE.GRASS):
+                return GrassVoxel.instance;
             default:
                 return null;
         }

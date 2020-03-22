@@ -21,7 +21,9 @@ public class ChunkBehavior : MonoBehaviour
 
     void generateChunk()
     {
-        model = ChunkModelGenerator.generateSimpleGround(bounds);
+        float modelstarttime = Time.realtimeSinceStartup;
+        model = ChunkModelGenerator.generateSimpleFunction(bounds);
+        RuntimeAnalysis.modelCreationTimes.Add(Time.realtimeSinceStartup - modelstarttime);
         StartCoroutine(updateMeshRout());
     }
 
@@ -31,11 +33,11 @@ public class ChunkBehavior : MonoBehaviour
         List<Vector3> vertices = new List<Vector3>();
         List<Vector2> uvs = new List<Vector2>();
         List<int> triangles = new List<int>();
+        float voxelstarttime = Time.realtimeSinceStartup;
         for (int x = 0; x < bounds.size.x; x++) // put stuff in the model
         {
             for (int y = 0; y < bounds.size.y; y++)
             {
-                yield return 0;
                 for (int z = 0; z < bounds.size.z; z++)
                 {
                     Vector3Int p = new Vector3Int(x, y, z);
@@ -56,14 +58,19 @@ public class ChunkBehavior : MonoBehaviour
                 }
             }
         }
-
+        RuntimeAnalysis.voxelCreationTimes.Add(Time.realtimeSinceStartup - voxelstarttime);
+        float meshstarttime = Time.realtimeSinceStartup;
         Mesh mesh = new Mesh();
         mesh.SetVertices(vertices);
         mesh.SetUVs(0, uvs);
         mesh.SetTriangles(triangles, 0);
         mesh.RecalculateNormals();
+        RuntimeAnalysis.meshCreationTimes.Add(Time.realtimeSinceStartup - meshstarttime);
+        float assignmeshstarttime = Time.realtimeSinceStartup;
         meshFilter.mesh = mesh;
         meshCollider.sharedMesh = mesh;
+        RuntimeAnalysis.meshAssigningTimes.Add(Time.realtimeSinceStartup - assignmeshstarttime);
+        yield return 0;
     }
 
     void updateMesh()

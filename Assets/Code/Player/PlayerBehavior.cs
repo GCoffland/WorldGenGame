@@ -62,6 +62,13 @@ public class PlayerBehavior : MonoBehaviour
         {
             noClip = !noClip;
         }
+        if (Input.GetButtonDown("Debug"))
+        {
+            Debug.Log("Average model creation time: " + RuntimeAnalysis.getAverageModelCreationTimes());
+            Debug.Log("Average voxel creation time: " + RuntimeAnalysis.getAverageVoxelCreationTimes());
+            Debug.Log("Average mesh creation time: " + RuntimeAnalysis.getAverageMeshCreationTimes());
+            Debug.Log("Average mesh assigning time: " + RuntimeAnalysis.getAverageMeshAssigningTimes());
+        }
     }
 
     private Vector3 rotation = new Vector3(0, 0, 0);
