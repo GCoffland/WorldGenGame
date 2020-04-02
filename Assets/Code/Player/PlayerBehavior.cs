@@ -36,6 +36,7 @@ public class PlayerBehavior : MonoBehaviour
         rb.useGravity = !noClip;
         rb.freezeRotation = !noClip;
         Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
     
     // Update is called once per frame
@@ -61,13 +62,6 @@ public class PlayerBehavior : MonoBehaviour
         if (Input.GetButtonDown("NoClip"))
         {
             noClip = !noClip;
-        }
-        if (Input.GetButtonDown("Debug"))
-        {
-            Debug.Log("Average model creation time: " + RuntimeAnalysis.getAverageModelCreationTimes());
-            Debug.Log("Average voxel creation time: " + RuntimeAnalysis.getAverageVoxelCreationTimes());
-            Debug.Log("Average mesh creation time: " + RuntimeAnalysis.getAverageMeshCreationTimes());
-            Debug.Log("Average mesh assigning time: " + RuntimeAnalysis.getAverageMeshAssigningTimes());
         }
     }
 

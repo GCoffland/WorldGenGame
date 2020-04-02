@@ -39,14 +39,6 @@ public static class VoxelData
         {DIRECTION.X_NEG, new Vector3Int(-1,0,0)},
     };
 
-    public static Dictionary<VOXELTYPE, Type> VoxelTypes = new Dictionary<VOXELTYPE, Type>()
-    {
-        {VOXELTYPE.NONE, null},
-        {VOXELTYPE.DEBUG, typeof(VoxelBase)},
-        {VOXELTYPE.DIRT, typeof(DirtVoxel)},
-        {VOXELTYPE.GRASS, typeof(GrassVoxel)},
-    };
-
     public static VoxelBase getVoxelType(VOXELTYPE t)
     {
         switch (t)

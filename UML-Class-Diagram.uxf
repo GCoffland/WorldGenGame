@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<diagram program="umlet" version="14.3.0">
+  <zoom_level>7</zoom_level>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>875</x>
+      <y>266</y>
+      <w>147</w>
+      <h>133</h>
+    </coordinates>
+    <panel_attributes>ChunkBehavior : MonoBehavior
+--
+--
+--
+Responsibilities
+-- Manage own model
+-- Initiate mesh update
+-- Apply updated mesh when
+ready</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>1036</x>
+      <y>266</y>
+      <w>147</w>
+      <h>133</h>
+    </coordinates>
+    <panel_attributes>ChunkThreadData
+--
++updateInProgress : bool
++outputReady : bool
++outputVertices : Vector3[]
++outputUVs : Vector2[]
++outputTriangles : int[]
+-voxelMutex : Mutex
+--
++updateVoxels() : void
+--
+-- Contains all methods and
+fields for async mesh generation</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>616</x>
+      <y>182</y>
+      <w>315</w>
+      <h>63</h>
+    </coordinates>
+    <panel_attributes>VoxelTools
+--
+--
++isPerimeterVoxelSide(Vector3Int,DIRECTION,ChunkBehavior) : bool
++isVoxelSideVisible(Vector3Int,DIRECTION,ChunkBehavior) : bool
+--
+-Contains all methods for chunk model and mesh generation</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>896</x>
+      <y>483</y>
+      <w>147</w>
+      <h>133</h>
+    </coordinates>
+    <panel_attributes>WorldBehavior : MonoBehavior
+--
+--
+--
+Responsibilities
+-- Manage Chunks
+-- Initiate Chunk creation and
+deletion</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>154</x>
+      <y>294</y>
+      <w>259</w>
+      <h>154</h>
+    </coordinates>
+    <panel_attributes>VoxelBase
+--
++instance : VoxelBase
+#textureOrigins : Vector2
+#voxelVertexes : Vector3
+#voxelFaces : int[]
+#voxelUVs : Vector2
+--
++makeVoxelVertsAt(Vector3,DIRECTION) : List&lt;Vector3&gt;
++getVoxelUVs(DIRECTION) : List&lt;Vector2)
++getTriangles(ref int) : List&lt;int&gt;
+--
+Responsibilities
+-- Hold data for the basic voxel
+-- Hold methods for creating a voxel</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>49</x>
+      <y>525</y>
+      <w>189</w>
+      <h>84</h>
+    </coordinates>
+    <panel_attributes>GrassVoxel
+--
++instance : GrassVoxel
+#textureOrigins : Vector2
+--
+Responsibilities
+-- Hold data for the grass voxel
+-- Hold methods for creating a grass voxel</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>308</x>
+      <y>525</y>
+      <w>189</w>
+      <h>84</h>
+    </coordinates>
+    <panel_attributes>DirtVoxel
+--
++instance : DirtVoxel
+#textureOrigins : Vector2
+--
+Responsibilities
+-- Hold data for the dirt voxel
+-- Hold methods for creating a dirt voxel</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>266</x>
+      <y>441</y>
+      <w>154</w>
+      <h>98</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;&lt;-</panel_attributes>
+    <additional_attributes>10.0;10.0;10.0;80.0;200.0;80.0;200.0;120.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>133</x>
+      <y>441</y>
+      <w>154</w>
+      <h>98</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;&lt;-</panel_attributes>
+    <additional_attributes>200.0;10.0;200.0;80.0;10.0;80.0;10.0;120.0</additional_attributes>
+  </element>
+</diagram>

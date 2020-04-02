@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 1773097176541478818}
   - component: {fileID: 1773097176541478819}
   - component: {fileID: 7860502670686350903}
+  - component: {fileID: 6655346161084489816}
   m_Layer: 0
   m_Name: Chunk
   m_TagString: Untagged
@@ -50,7 +51,7 @@ MonoBehaviour:
   meshFilter: {fileID: 1773097176541478819}
   bounds:
     m_Position: {x: 0, y: 0, z: 0}
-    m_Size: {x: 16, y: 8, z: 16}
+    m_Size: {x: 128, y: 128, z: 128}
   meshCollider: {fileID: 7860502670686350903}
 --- !u!23 &1773097176541478818
 MeshRenderer:
@@ -105,10 +106,34 @@ MeshCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1773097176541478829}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: 195833f7f1c2eb14fbd10b41e6e2fce9, type: 2}
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 3
   m_Convex: 0
   m_CookingOptions: 14
   m_Mesh: {fileID: 0}
+--- !u!205 &6655346161084489816
+LODGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1773097176541478829}
+  serializedVersion: 2
+  m_LocalReferencePoint: {x: 0, y: 0, z: 0}
+  m_Size: 1
+  m_FadeMode: 0
+  m_AnimateCrossFading: 0
+  m_LastLODIsBillboard: 0
+  m_LODs:
+  - screenRelativeHeight: 0.6
+    fadeTransitionWidth: 0
+    renderers: []
+  - screenRelativeHeight: 0.3
+    fadeTransitionWidth: 0
+    renderers: []
+  - screenRelativeHeight: 0.1
+    fadeTransitionWidth: 0
+    renderers: []
+  m_Enabled: 1
