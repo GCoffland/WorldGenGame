@@ -10,6 +10,7 @@ public class WorldBehavior : MonoBehaviour
     public List<GameObject> players;
     private BoundsInt chunkBounds;
     private Hashtable activeChunks = new Hashtable();
+    public Dictionary<Vector3Int, VOXELTYPE> blockChangeLog = new Dictionary<Vector3Int, VOXELTYPE>();
 
     // Start is called before the first frame update
     void Start()

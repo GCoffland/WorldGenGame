@@ -14,8 +14,6 @@ public class ChunkBehavior : MonoBehaviour
     public BoundsInt bounds;
     public MeshCollider meshCollider;
 
-    private ModelData modeldata;
-
     private List<VertexBufferStruct> Vertices;
     private List<int> Triangles;
     //private List<SubMeshDescriptor> SubMeshDescriptors;
@@ -29,7 +27,6 @@ public class ChunkBehavior : MonoBehaviour
         Task.Run(() => {
                             try
                             {
-                                modelGenerationTask();
                                 voxelGenerationTask();
                             }
                             catch (System.Exception e)
@@ -71,16 +68,16 @@ public class ChunkBehavior : MonoBehaviour
         meshNeedsApply = false;
     }
 
-    public void removeBlockAt(Vector3Int pos)
+    public void removeBlockAt(Vector3Int localpos)
     {
-        if(modeldata[pos.x, pos.y, pos.z] == VOXELTYPE.NONE)
+        if(ChunkModelGenerator.voxelAtPoint(bounds.min + localpos) == VOXELTYPE.NONE)
         {
-            UnityEngine.Debug.Log("Tried to remove a block that does not exist at " + pos);
+            UnityEngine.Debug.Log("Tried to remove a block that does not exist at " + localpos);
         }
         else
         {
-            removeVoxelAt(pos);
-            modeldata[pos.x, pos.y, pos.z] = VOXELTYPE.NONE;
+            removeVoxelAt(localpos);
+            WorldBehavior.instance.blockChangeLog[bounds.min + localpos] = VOXELTYPE.NONE;
         }
     }
 
@@ -88,7 +85,7 @@ public class ChunkBehavior : MonoBehaviour
     {
         Stopwatch sw = new Stopwatch(); // Debug
         sw.Start(); // Debug
-        VoxelBase vb = VoxelData.getVoxelType(modeldata[pos.x, pos.y, pos.z]);
+        VoxelBase vb = VoxelData.getVoxelType(ChunkModelGenerator.voxelAtPoint(bounds.min + pos));
         for(int d = 0; d < 6; d++)
         {
             if (isVoxelSideVisible(pos, (DIRECTION)d))
@@ -121,7 +118,7 @@ public class ChunkBehavior : MonoBehaviour
     }
  
     /************Purely Task/Threaded Code************/
-    static Mutex[] permittedThreads = new Mutex[8];
+    static Mutex[] permittedThreads = new Mutex[1];
     Mutex chunkMutex = new Mutex();
 
     public static void mutexesInit()
@@ -132,24 +129,12 @@ public class ChunkBehavior : MonoBehaviour
         }
     }
 
-    void modelGenerationTask()
-    {
-        int mutexindex = WaitHandle.WaitAny(permittedThreads);
-        Stopwatch sw = new Stopwatch(); // Debug
-        sw.Start(); // Debug
-        modeldata = ChunkModelGenerator.generateSimpleFunction(bounds);
-        sw.Stop(); // Debug
-        UnityEngine.Debug.Log("Generating Model for the chunk at " + bounds.min + " took " + sw.ElapsedMilliseconds / 1000f + " seconds"); // Debug
-        permittedThreads[mutexindex].ReleaseMutex();
-    }
-
     void voxelGenerationTask()
     {
         int mutexindex = WaitHandle.WaitAny(permittedThreads);
         chunkMutex.WaitOne();
         Stopwatch sw = new Stopwatch(); // Debug
         sw.Start(); // Debug
-        //bool[,,] checklist = new bool[bounds.size.x, bounds.size.y, bounds.size.z];
         Vertices = new List<VertexBufferStruct>();
         Triangles = new List<int>();
         for (int x = 0; x < bounds.size.x; x++)
@@ -159,31 +144,17 @@ public class ChunkBehavior : MonoBehaviour
                 for (int z = 0; z < bounds.size.z; z++)
                 {
                     Vector3Int p = new Vector3Int(x, y, z);
-                    if (modeldata[p.x, p.y, p.z] != VOXELTYPE.NONE)
+                    VOXELTYPE currentBlock = ChunkModelGenerator.voxelAtPoint(bounds.min + new Vector3Int(x, y, z));
+                    if (currentBlock != VOXELTYPE.NONE)
                     {
-                        /*bool blockIsVisible = false;
-                        int firstVertexIndex = 0;
-                        int firstTriangleIndex = 0;*/
                         for (int d = 0; d < 6; d++)
                         {
                             if (isVoxelSideVisible(p, (DIRECTION)d))
                             {
-                                /*if (!blockIsVisible)
-                                {
-                                    blockIsVisible = true;
-                                    firstVertexIndex = Vertices.Count;
-                                    firstTriangleIndex = Triangles.Count;
-                                }*/
-                                VoxelBase vb = VoxelData.getVoxelType(modeldata[p.x, p.y, p.z]);
+                                VoxelBase vb = VoxelData.getVoxelType(currentBlock);
                                 vb.appendVoxelAt(p, (DIRECTION)d, ref Vertices, ref Triangles);
                             }
                         }
-                        /*if (blockIsVisible)
-                        {
-                            SubMeshDescriptor smd = new SubMeshDescriptor();
-                            smd.ba
-                            SubMeshDescriptors.Add
-                        }*/
                     }
                 }
             }
@@ -247,7 +218,7 @@ public class ChunkBehavior : MonoBehaviour
     
     public bool isVoxelSideVisible(Vector3Int pos, DIRECTION dir)
     {
-        if (modeldata[pos.x, pos.y, pos.z] == VOXELTYPE.NONE) // if voxel is air
+        if (ChunkModelGenerator.voxelAtPoint(bounds.min + pos) == VOXELTYPE.NONE) // if voxel is air
         {
             return false;
         }
@@ -255,10 +226,7 @@ public class ChunkBehavior : MonoBehaviour
         {
             return ChunkModelGenerator.voxelAtPoint(bounds.min + pos + VoxelData.DIRECTIONVECTORS[dir]) == VOXELTYPE.NONE;
         }
-        else if (modeldata[(pos.x + VoxelData.DIRECTIONVECTORS[dir].x), // if the side is facing air
-                       (pos.y + VoxelData.DIRECTIONVECTORS[dir].y),
-                       (pos.z + VoxelData.DIRECTIONVECTORS[dir].z)]
-                       == VOXELTYPE.NONE)
+        else if (ChunkModelGenerator.voxelAtPoint(bounds.min + pos + VoxelData.DIRECTIONVECTORS[dir]) == VOXELTYPE.NONE)
         {
             return true;
         }
