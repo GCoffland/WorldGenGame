@@ -18,6 +18,7 @@ public class ChunkBehavior : MonoBehaviour
 
     private List<VertexBufferStruct> Vertices;
     private List<int> Triangles;
+    //private List<SubMeshDescriptor> SubMeshDescriptors;
 
     private bool meshNeedsApply = false;
 
@@ -53,16 +54,21 @@ public class ChunkBehavior : MonoBehaviour
         m.SetVertexBufferParams(Vertices.Count, VoxelData.VertexBufferLayout);
         m.SetIndexBufferParams(Triangles.Count, IndexFormat.UInt32);
         m.SetVertexBufferData(Vertices, 0, 0, Vertices.Count);
-        m.SetTriangles(Triangles, 0);
+        m.SetIndexBufferData(Triangles, 0, 0, Triangles.Count);
+        SubMeshDescriptor smd = new SubMeshDescriptor()
+        {
+            firstVertex = 0,
+            vertexCount = Vertices.Count,
+            baseVertex = 0,
+            topology = MeshTopology.Triangles,
+            indexStart = 0,
+            indexCount = Triangles.Count,
+        };
+        m.SetSubMesh(0, smd);
         m.RecalculateBounds();
         meshFilter.mesh = m;
         meshCollider.sharedMesh = m;
         meshNeedsApply = false;
-        UnityEngine.Debug.Log("Verticies count: " + Vertices.Count);
-        UnityEngine.Debug.Log("Triangles count: " + Triangles.Count);
-        UnityEngine.Debug.Log("First3Vectors: " + Vertices[0].position + ", " + Vertices[1].position + ", " + Vertices[2].position + ", ");
-        UnityEngine.Debug.Log("FirstTriangle: " + Triangles[0] + ", " + Triangles[1] + ", " + Triangles[2]);
-        UnityEngine.Debug.Log("SubMeshCount: " + m.subMeshCount);
     }
 
     public void removeBlockAt(Vector3Int pos)
@@ -115,7 +121,7 @@ public class ChunkBehavior : MonoBehaviour
     }
  
     /************Purely Task/Threaded Code************/
-    static Mutex[] permittedThreads = new Mutex[1];
+    static Mutex[] permittedThreads = new Mutex[8];
     Mutex chunkMutex = new Mutex();
 
     public static void mutexesInit()
@@ -131,7 +137,7 @@ public class ChunkBehavior : MonoBehaviour
         int mutexindex = WaitHandle.WaitAny(permittedThreads);
         Stopwatch sw = new Stopwatch(); // Debug
         sw.Start(); // Debug
-        modeldata = ChunkModelGenerator.generateSimpleGround(bounds);
+        modeldata = ChunkModelGenerator.generateSimpleFunction(bounds);
         sw.Stop(); // Debug
         UnityEngine.Debug.Log("Generating Model for the chunk at " + bounds.min + " took " + sw.ElapsedMilliseconds / 1000f + " seconds"); // Debug
         permittedThreads[mutexindex].ReleaseMutex();
@@ -155,14 +161,29 @@ public class ChunkBehavior : MonoBehaviour
                     Vector3Int p = new Vector3Int(x, y, z);
                     if (modeldata[p.x, p.y, p.z] != VOXELTYPE.NONE)
                     {
+                        /*bool blockIsVisible = false;
+                        int firstVertexIndex = 0;
+                        int firstTriangleIndex = 0;*/
                         for (int d = 0; d < 6; d++)
                         {
                             if (isVoxelSideVisible(p, (DIRECTION)d))
                             {
+                                /*if (!blockIsVisible)
+                                {
+                                    blockIsVisible = true;
+                                    firstVertexIndex = Vertices.Count;
+                                    firstTriangleIndex = Triangles.Count;
+                                }*/
                                 VoxelBase vb = VoxelData.getVoxelType(modeldata[p.x, p.y, p.z]);
                                 vb.appendVoxelAt(p, (DIRECTION)d, ref Vertices, ref Triangles);
                             }
                         }
+                        /*if (blockIsVisible)
+                        {
+                            SubMeshDescriptor smd = new SubMeshDescriptor();
+                            smd.ba
+                            SubMeshDescriptors.Add
+                        }*/
                     }
                 }
             }

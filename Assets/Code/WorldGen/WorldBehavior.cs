@@ -19,11 +19,10 @@ public class WorldBehavior : MonoBehaviour
         chunkBounds = chunk.GetComponent<ChunkBehavior>().bounds;
         generationRadius = chunkBounds.size.x * generationRadius;
         generationHeight = chunkBounds.size.x * generationHeight;
-        /*foreach (GameObject player in players)
+        foreach (GameObject player in players)
         {
             StartCoroutine(loadChunksAroundPlayer(player));
-        }*/
-        createChunk(Vector3Int.zero);
+        }
     }
 
     void createChunk(Vector3Int position)
