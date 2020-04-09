@@ -6,14 +6,14 @@ public class DirtVoxel : VoxelBase
 {
     new public readonly static DirtVoxel instance = new DirtVoxel();
 
-    protected override Hashtable textureOrigins { get; } = new Hashtable()
+    protected override Vector2[] textureOrigins { get; } = new Vector2[]
     {
-        {DIRECTION.X_NEG, new Vector2(2 * VoxelData.TNF,0)},
-        {DIRECTION.X_POS, new Vector2(2 * VoxelData.TNF,0)},
-        {DIRECTION.Y_NEG, new Vector2(2 * VoxelData.TNF,0)},
-        {DIRECTION.Y_POS, new Vector2(2 * VoxelData.TNF,0)},
-        {DIRECTION.Z_NEG, new Vector2(2 * VoxelData.TNF,0)},
-        {DIRECTION.Z_POS, new Vector2(2 * VoxelData.TNF,0)},
+        new Vector2(2 * VoxelData.TNF,0),
+        new Vector2(2 * VoxelData.TNF,0),
+        new Vector2(2 * VoxelData.TNF,0),
+        new Vector2(2 * VoxelData.TNF,0),
+        new Vector2(2 * VoxelData.TNF,0),
+        new Vector2(2 * VoxelData.TNF,0),
     };
 
     protected DirtVoxel() { } // private constructor

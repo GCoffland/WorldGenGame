@@ -56,7 +56,7 @@ public class PlayerBehavior : MonoBehaviour
         {
             if(selectedBlock != null)
             {
-                selectedBlock.GetComponent<ChunkBehavior>().setVoxel((Vector3Int)v, VOXELTYPE.NONE);
+                WorldBehavior.instance.removeBlockAt((Vector3Int)v);
             }
         }
         if (Input.GetButtonDown("NoClip"))

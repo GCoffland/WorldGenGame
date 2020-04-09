@@ -5,17 +5,15 @@ using UnityEngine;
 public class VoxelBase
 {
     public readonly static VoxelBase instance = new VoxelBase();
-
-    virtual protected Hashtable textureOrigins { get; } = new Hashtable()
+    virtual protected Vector2[] textureOrigins { get; } = new Vector2[]
     {
-        {DIRECTION.X_NEG, new Vector2(3 * VoxelData.TNF, 3 * VoxelData.TNF)},
-        {DIRECTION.X_POS, new Vector2(3 * VoxelData.TNF, 3 * VoxelData.TNF)},
-        {DIRECTION.Y_NEG, new Vector2(3 * VoxelData.TNF, 3 * VoxelData.TNF)},
-        {DIRECTION.Y_POS, new Vector2(3 * VoxelData.TNF, 3 * VoxelData.TNF)},
-        {DIRECTION.Z_NEG, new Vector2(3 * VoxelData.TNF, 3 * VoxelData.TNF)},
-        {DIRECTION.Z_POS, new Vector2(3 * VoxelData.TNF, 3 * VoxelData.TNF)},
+        new Vector2(3 * VoxelData.TNF, 3 * VoxelData.TNF),
+        new Vector2(3 * VoxelData.TNF, 3 * VoxelData.TNF),
+        new Vector2(3 * VoxelData.TNF, 3 * VoxelData.TNF),
+        new Vector2(3 * VoxelData.TNF, 3 * VoxelData.TNF),
+        new Vector2(3 * VoxelData.TNF, 3 * VoxelData.TNF),
+        new Vector2(3 * VoxelData.TNF, 3 * VoxelData.TNF),
     };
-
     virtual protected Vector3[] voxelVertexes { get; } = new Vector3[]
     {
         new Vector3(0,0,0), // 0
@@ -39,12 +37,30 @@ public class VoxelBase
     virtual protected Vector2[] voxelUVs { get; } = new Vector2[4]
     {
         new Vector2(0,0), //sides
-        new Vector2(0, 1 * VoxelData.TNF),
+        new Vector2(0, VoxelData.TNF),
         new Vector2(VoxelData.TNF, 0),
         new Vector2(VoxelData.TNF, VoxelData.TNF),
     };
-
     protected VoxelBase(){} // private constructor
+
+    public virtual void appendVoxelAt(Vector3 pos, DIRECTION dir, ref List<VertexBufferStruct> verticies, ref List<int> triangles)
+    {
+        int startindex = verticies.Count;
+        for(int i = 0; i < voxelFaces.GetLength(1); i++)
+        {
+            VertexBufferStruct temp = new VertexBufferStruct();
+            temp.position = pos + voxelVertexes[voxelFaces[(int)dir, i]];
+            temp.TexCoord = textureOrigins[(int)dir] + instance.voxelUVs[i];
+            temp.normal = VoxelData.DIRECTIONVECTORS[dir];
+            verticies.Add(temp);
+        }
+        triangles.Add(startindex); // get an array of all the indexes of all the voxels added in the vertices list in order (triangle order)
+        triangles.Add(startindex + 1);
+        triangles.Add(startindex + 2);
+        triangles.Add(startindex + 3);
+        triangles.Add(startindex + 2);
+        triangles.Add(startindex + 1);
+    }
 
     public virtual List<Vector3> makeVoxelSideVertsAt(Vector3 pos, DIRECTION dir)
     {
@@ -59,10 +75,10 @@ public class VoxelBase
     public virtual List<Vector2> getVoxelUVs(DIRECTION dir)
     {
         List<Vector2> uvs = new List<Vector2>();
-        uvs.Add((Vector2)textureOrigins[dir] + instance.voxelUVs[0]);
-        uvs.Add((Vector2)textureOrigins[dir] + instance.voxelUVs[1]);
-        uvs.Add((Vector2)textureOrigins[dir] + instance.voxelUVs[2]);
-        uvs.Add((Vector2)textureOrigins[dir] + instance.voxelUVs[3]);
+        uvs.Add(textureOrigins[(int)dir] + instance.voxelUVs[0]);
+        uvs.Add(textureOrigins[(int)dir] + instance.voxelUVs[1]);
+        uvs.Add(textureOrigins[(int)dir] + instance.voxelUVs[2]);
+        uvs.Add(textureOrigins[(int)dir] + instance.voxelUVs[3]);
         return uvs;
     }
 

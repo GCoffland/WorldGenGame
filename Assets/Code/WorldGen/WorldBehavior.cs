@@ -17,14 +17,23 @@ public class WorldBehavior : MonoBehaviour
         instance = this;
         ChunkBehavior.mutexesInit();
         chunkBounds = chunk.GetComponent<ChunkBehavior>().bounds;
-        foreach (GameObject player in players)
+        generationRadius = chunkBounds.size.x * generationRadius;
+        generationHeight = chunkBounds.size.x * generationHeight;
+        /*foreach (GameObject player in players)
         {
             StartCoroutine(loadChunksAroundPlayer(player));
-        }
+        }*/
+        createChunk(Vector3Int.zero);
     }
 
-    private readonly int generationRadius = 1;
-    private readonly int generationHeight = 1;
+    void createChunk(Vector3Int position)
+    {
+        Debug.Log("Instantiating Chunk at: " + position);
+        activeChunks.Add(position, GameObject.Instantiate<GameObject>(chunk, position, Quaternion.identity, transform));
+    }
+
+    private int generationRadius = 1;
+    private int generationHeight = 1;
 
     IEnumerator loadChunksAroundPlayer(GameObject player)
     {
@@ -56,32 +65,18 @@ public class WorldBehavior : MonoBehaviour
                               Mathf.FloorToInt(input.z / chunkBounds.size.z) * chunkBounds.size.z);
     }
 
-    private int roundToNearestMultiple(float input, int multiple)
+    public void removeBlockAt(Vector3Int pos)
     {
-        if(input%multiple >= (float)multiple / 2)
+        GameObject go = (GameObject)activeChunks[worldPosToChunkPos(pos)];
+        if (go == null)
         {
-            return (((int)(input / multiple)) + 1) * multiple;
+            Debug.Log("Null GameObject in activeChunks HashTable at Vector: " + worldPosToChunkPos(pos));
         }
         else
         {
-            return ((int)(input / multiple)) * multiple;
+            Debug.Log("Trying to remove Voxel from pos: " + pos);
+            ChunkBehavior cb = go.GetComponent<ChunkBehavior>();
+            cb.removeBlockAt(pos - Vector3Int.FloorToInt(go.transform.position));
         }
-    }
-
-    private Vector3Int roundToNearestMultiple(Vector3 input, Vector3Int multiple)
-    {
-        return new Vector3Int(roundToNearestMultiple(input.x,multiple.x),
-                              roundToNearestMultiple(input.y, multiple.y),
-                              roundToNearestMultiple(input.z, multiple.z));
-    }
-
-    void createChunk(Vector3Int position)
-    {
-        activeChunks.Add(position, GameObject.Instantiate<GameObject>(chunk, position, Quaternion.identity, transform));
-    }
-
-    public GameObject getChunkAt(Vector3Int pos)
-    {
-        return (GameObject)activeChunks[pos];
     }
 }

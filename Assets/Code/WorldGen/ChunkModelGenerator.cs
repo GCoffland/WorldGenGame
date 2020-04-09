@@ -7,38 +7,58 @@ public static class ChunkModelGenerator
 {
     public static int seed;
 
-    public static VOXELTYPE[,,] generateSimpleRandom(BoundsInt bounds)
+    public static ModelData generateSimpleRandom(BoundsInt bounds)
     {
-        VOXELTYPE[,,] model = new VOXELTYPE[bounds.size.x, bounds.size.y, bounds.size.z];
-        UnityEngine.Random.InitState(seed);
-
-        for (int x = bounds.xMin; x < bounds.xMax; x++) // asemble the model
+        ModelData modeldata = new ModelData(bounds);
+        System.Random ran = new System.Random();
+        for (int x = 0; x < bounds.size.x; x++) // asemble the model
         {
-            for (int y = bounds.yMin; y < bounds.yMax; y++)
+            for (int y = 0; y < bounds.size.y; y++)
             {
-                for (int z = bounds.zMin; z < bounds.zMax; z++)
+                for (int z = 0; z < bounds.size.z; z++)
                 {
-                    float ran = UnityEngine.Random.Range(0f, 1f);
-                    if (ran < 0.2f)
+                    if (ran.NextDouble() < 0.2)
                     {
-                        model[x, y, z] = VOXELTYPE.DIRT;
+                        modeldata[x, y, z] = VOXELTYPE.DIRT;
                     }
                     else
                     {
-                        model[x, y, z] = VOXELTYPE.NONE;
+                        modeldata[x, y, z] = VOXELTYPE.NONE;
                     }
 
                 }
             }
         }
-        return model;
+        return modeldata;
     }
 
-    public static VOXELTYPE[,,] generateSimpleGround(BoundsInt bounds)
+    public static ModelData generateBasicWorstCase(BoundsInt bounds)
     {
-        VOXELTYPE[,,] model = new VOXELTYPE[bounds.size.x, bounds.size.y, bounds.size.z];
-        UnityEngine.Random.InitState(seed);
+        ModelData modeldata = new ModelData(bounds);
+        for (int x = 0; x < bounds.size.x; x++) // asemble the model
+        {
+            for (int y = 0; y < bounds.size.y; y++)
+            {
+                for (int z = 0; z < bounds.size.z; z++)
+                {
+                    if ((x+y+z) % 2 == 0)
+                    {
+                        modeldata[x, y, z] = VOXELTYPE.DIRT;
+                    }
+                    else
+                    {
+                        modeldata[x, y, z] = VOXELTYPE.NONE;
+                    }
 
+                }
+            }
+        }
+        return modeldata;
+    }
+
+    public static ModelData generateSimpleGround(BoundsInt bounds)
+    {
+        ModelData model = new ModelData(bounds);
         for (int x = 0; x < bounds.size.x; x++) // asemble the model
         {
             for (int y = 0; y < bounds.size.y; y++)
@@ -100,7 +120,7 @@ public static class ChunkModelGenerator
 
     private static int function(int x, int y, int z)
     {
-        return (int)(21 * Mathf.Sin(x * 0.04f) + 53 * Mathf.Sin(z * 0.02f));
+        return (int)(0.6 * x * x + 0.5 * z * z - z * x * 0.2);
     }
 }
 
