@@ -5,7 +5,6 @@ using UnityEngine.Rendering;
 using Unity.Collections;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics;
 
 public class ChunkBehavior : MonoBehaviour
 {
@@ -31,8 +30,9 @@ public class ChunkBehavior : MonoBehaviour
                             }
                             catch (System.Exception e)
                             {
-                                UnityEngine.Debug.LogException(e);
+                                Debug.LogException(e);
                             }
+                            WorldBehavior.instance.chunkCurrentlyGenerating = false;
                        });
     }
 
@@ -83,7 +83,7 @@ public class ChunkBehavior : MonoBehaviour
 
     private void removeVoxelAt(Vector3Int pos)
     {
-        Stopwatch sw = new Stopwatch(); // Debug
+        System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch(); // Debug
         sw.Start(); // Debug
         VoxelBase vb = VoxelData.getVoxelType(ChunkModelGenerator.voxelAtPoint(bounds.min + pos));
         for(int d = 0; d < 6; d++)
@@ -108,7 +108,7 @@ public class ChunkBehavior : MonoBehaviour
             }
         }
         sw.Stop(); // Debug
-        UnityEngine.Debug.Log("Removing Voxel from mesh for the chunk at " + bounds.min + " took " + sw.ElapsedMilliseconds / 1000f + " seconds"); // Debug
+        Debug.Log("Removing Voxel from mesh for the chunk at " + bounds.min + " took " + sw.ElapsedMilliseconds / 1000f + " seconds"); // Debug
         applyUpdatedMesh();
     }
 
@@ -118,46 +118,24 @@ public class ChunkBehavior : MonoBehaviour
     }
  
     /************Purely Task/Threaded Code************/
-    static Mutex[] permittedThreads = new Mutex[1];
-    Mutex chunkMutex = new Mutex();
+    static Mutex chunkMutex = new Mutex();
 
-    public static void mutexesInit()
-    {
-        for(int i = 0; i < permittedThreads.Length; i++)
-        {
-            permittedThreads[i] = new Mutex();
-        }
-    }
+    const int numOfThreads = 8;
 
     void voxelGenerationTask()
     {
-        int mutexindex = WaitHandle.WaitAny(permittedThreads);
         chunkMutex.WaitOne();
-        Stopwatch sw = new Stopwatch(); // Debug
+        System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch(); // Debug
         sw.Start(); // Debug
         Vertices = new List<VertexBufferStruct>();
         Triangles = new List<int>();
-        for (int x = 0; x < bounds.size.x; x++)
+        List<VertexBufferStruct>[] verts = new List<VertexBufferStruct>[numOfThreads];
+        List<int>[] tris = new List<int>[numOfThreads];
+        Task[] tasks = new Task[numOfThreads];
+        for(int i = 0; i < tasks.Length; i++)
         {
-            for (int y = 0; y < bounds.size.y; y++)
-            {
-                for (int z = 0; z < bounds.size.z; z++)
-                {
-                    Vector3Int p = new Vector3Int(x, y, z);
-                    VOXELTYPE currentBlock = ChunkModelGenerator.voxelAtPoint(bounds.min + new Vector3Int(x, y, z));
-                    if (currentBlock != VOXELTYPE.NONE)
-                    {
-                        for (int d = 0; d < 6; d++)
-                        {
-                            if (isVoxelSideVisible(p, (DIRECTION)d))
-                            {
-                                VoxelBase vb = VoxelData.getVoxelType(currentBlock);
-                                vb.appendVoxelAt(p, (DIRECTION)d, ref Vertices, ref Triangles);
-                            }
-                        }
-                    }
-                }
-            }
+            int passval = i;
+            tasks[i] = Task.Run(() => { generate(passval * (bounds.size.x / tasks.Length), (passval + 1) * (bounds.size.x / tasks.Length), passval); });
         }
         /*Stack<Vector3Int> stack = new Stack<Vector3Int>(bounds.size.x * bounds.size.y * bounds.size.z);
         stack.Push(new Vector3Int(0, 0, 0));
@@ -188,11 +166,47 @@ public class ChunkBehavior : MonoBehaviour
                 }
             }
         }*/
+        Task.WaitAll(tasks);
+        for(int i = 0; i < tasks.Length; i++)
+        {
+            for (int j = 0; j < tris[i].Count; j++)
+            {
+                Triangles.Add(tris[i][j] + Vertices.Count);
+            }
+            Vertices.AddRange(verts[i]);
+        }
         meshNeedsApply = true;
         sw.Stop(); // Debug
-        UnityEngine.Debug.Log("Generating Voxels for the chunk at " + bounds.min + " took " + sw.ElapsedMilliseconds/1000f + " seconds"); // Debug
+        Debug.Log("Generating Voxels for the chunk at " + bounds.min + " took " + sw.ElapsedMilliseconds/1000f + " seconds"); // Debug
         chunkMutex.ReleaseMutex();
-        permittedThreads[mutexindex].ReleaseMutex();
+
+        void generate(int lower, int upper, int threadNum)
+        {
+            verts[threadNum] = new List<VertexBufferStruct>();
+            tris[threadNum] = new List<int>();
+            for (int x = lower; x < upper; x++)
+            {
+                for (int y = 0; y < bounds.size.y; y++)
+                {
+                    for (int z = 0; z < bounds.size.z; z++)
+                    {
+                        Vector3Int p = new Vector3Int(x, y, z);
+                        VOXELTYPE currentBlock = ChunkModelGenerator.voxelAtPoint(bounds.min + new Vector3Int(x, y, z));
+                        if (currentBlock != VOXELTYPE.NONE)
+                        {
+                            for (int d = 0; d < 6; d++)
+                            {
+                                if (isVoxelSideVisible(p, (DIRECTION)d))
+                                {
+                                    VoxelBase vb = VoxelData.getVoxelType(currentBlock);
+                                    vb.appendVoxelAt(p, (DIRECTION)d, ref verts[threadNum], ref tris[threadNum]);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
     
     /***********************End of Threaded Tasks***************************/

@@ -11,12 +11,13 @@ public class WorldBehavior : MonoBehaviour
     private BoundsInt chunkBounds;
     private Hashtable activeChunks = new Hashtable();
     public Dictionary<Vector3Int, VOXELTYPE> blockChangeLog = new Dictionary<Vector3Int, VOXELTYPE>();
+    public bool chunkCurrentlyGenerating = false;
+    private Queue<Vector3Int> chunkGenQueue = new Queue<Vector3Int>();
 
     // Start is called before the first frame update
     void Start()
     {
         instance = this;
-        ChunkBehavior.mutexesInit();
         chunkBounds = chunk.GetComponent<ChunkBehavior>().bounds;
         generationRadius = chunkBounds.size.x * generationRadius;
         generationHeight = chunkBounds.size.x * generationHeight;
@@ -26,14 +27,28 @@ public class WorldBehavior : MonoBehaviour
         }
     }
 
+    private void Update()
+    {
+        if(chunkGenQueue.Count > 0 && !chunkCurrentlyGenerating)
+        {
+            createChunk(chunkGenQueue.Dequeue());
+        }
+    }
+
+    void queueChunk(Vector3Int position)
+    {
+        chunkGenQueue.Enqueue(position);
+    }
+
     void createChunk(Vector3Int position)
     {
         Debug.Log("Instantiating Chunk at: " + position);
+        chunkCurrentlyGenerating = true;
         activeChunks.Add(position, GameObject.Instantiate<GameObject>(chunk, position, Quaternion.identity, transform));
     }
 
-    private int generationRadius = 1;
-    private int generationHeight = 1;
+    private int generationRadius = 2;
+    private int generationHeight = 3;
 
     IEnumerator loadChunksAroundPlayer(GameObject player)
     {
@@ -47,9 +62,9 @@ public class WorldBehavior : MonoBehaviour
                     for (int z = playerpos.z - generationRadius; z < playerpos.z + generationRadius; z += chunkBounds.size.z)
                     {
                         Vector3Int temp = new Vector3Int(x, y, z);
-                        if (activeChunks[temp] == null)
+                        if (!activeChunks.Contains(temp) && !chunkGenQueue.Contains(temp))
                         {
-                            createChunk(temp);
+                            queueChunk(temp);
                         }
                     }
                 }
