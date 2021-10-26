@@ -52,6 +52,7 @@ MonoBehaviour:
     m_Position: {x: 0, y: 0, z: 0}
     m_Size: {x: 64, y: 64, z: 64}
   meshCollider: {fileID: 7860502670686350903}
+  computeShader: {fileID: 7200000, guid: c433db051852ea9478c42bb24af6f80d, type: 3}
 --- !u!23 &1773097176541478818
 MeshRenderer:
   m_ObjectHideFlags: 0

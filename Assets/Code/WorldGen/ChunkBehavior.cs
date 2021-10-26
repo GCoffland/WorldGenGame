@@ -12,56 +12,126 @@ public class ChunkBehavior : MonoBehaviour
     public MeshFilter meshFilter;
     public BoundsInt bounds;
     public MeshCollider meshCollider;
+    public ComputeShader computeShader;
 
-    private List<VertexBufferStruct> Vertices;
-    private List<int> Triangles;
-    //private List<SubMeshDescriptor> SubMeshDescriptors;
+    private NativeArray<VertexBufferStruct> Verticies;
+    private uint VertexCount;
+    private NativeArray<uint> Quads;
+    private uint QuadCount;
 
     private bool meshNeedsApply = false;
+    ComputeBuffer vertexbuffer;
+    ComputeBuffer quadbuffer;
+    ComputeBuffer blockmapbuffer;
+    ComputeBuffer vertcountbuffer;
+    ComputeBuffer quadcountbuffer;
+    readonly int[] DispatchArgs = new int[] { 1, 1, 1 };
+    AsyncGPUReadbackRequest vertexRequest;
+    AsyncGPUReadbackRequest quadRequest;
+
+    readonly uint[] blockmap = new uint[]
+    {
+        0, 0, 0, 0, 0, 0,
+        0, 1, 0, 1, 0, 0,
+        0, 0, 1, 0, 0, 0,
+        0, 1, 0, 1, 1, 0,
+        0, 0, 1, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 1, 0, 1, 0, 0,
+        0, 0, 1, 0, 0, 0,
+        0, 1, 0, 1, 1, 0,
+        0, 0, 1, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 1, 0, 1, 0, 0,
+        0, 0, 1, 0, 0, 0,
+        0, 1, 0, 1, 1, 0,
+        0, 0, 1, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 1, 0, 1, 0, 0,
+        0, 0, 1, 0, 0, 0,
+        0, 1, 0, 1, 1, 0,
+        0, 0, 1, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 1, 0, 1, 0, 0,
+        0, 0, 1, 0, 0, 0,
+        0, 1, 0, 1, 1, 0,
+        0, 0, 1, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 1, 0, 1, 0, 0,
+        0, 0, 1, 0, 0, 0,
+        0, 1, 0, 1, 1, 0,
+        0, 0, 1, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+    };
+
+    private void Awake()
+    {
+        Verticies = new NativeArray<VertexBufferStruct>(128 * 32 * 16, Allocator.Persistent);
+        Quads = new NativeArray<uint>(128 * 32 * 16, Allocator.Persistent);
+    }
 
     // Start is called before the first frame update
     void Start()
     {
-        bounds.position = Vector3Int.RoundToInt(transform.position);
-        Task.Run(() => {
-                            try
-                            {
-                                voxelGenerationTask();
-                            }
-                            catch (System.Exception e)
-                            {
-                                Debug.LogException(e);
-                            }
-                            WorldBehavior.instance.chunkCurrentlyGenerating = false;
-                       });
+        vertexbuffer = new ComputeBuffer(128 * 32, 128, ComputeBufferType.Counter | ComputeBufferType.Structured);
+        quadbuffer = new ComputeBuffer(128 * 32, 16, ComputeBufferType.Counter | ComputeBufferType.Structured);
+        blockmapbuffer = new ComputeBuffer(blockmap.Length, 4, ComputeBufferType.Default);
+        vertcountbuffer = new ComputeBuffer(1, 4);
+        quadcountbuffer = new ComputeBuffer(1, 4);
+
+        blockmapbuffer.SetData(blockmap);
+        computeShader.SetBuffer(0, "VertexResult", vertexbuffer);
+        computeShader.SetBuffer(0, "QuadResult", quadbuffer);
+        computeShader.SetBuffer(0, "VertexCount", vertcountbuffer);
+        computeShader.SetBuffer(0, "QuadCount", quadcountbuffer);
+        computeShader.SetBuffer(0, "BlockMap", blockmapbuffer);
+        computeShader.SetInts("DispatchArgs", DispatchArgs);
+        computeShader.Dispatch(0, DispatchArgs[0], DispatchArgs[1], DispatchArgs[2]);
+        vertexRequest = AsyncGPUReadback.RequestIntoNativeArray<VertexBufferStruct>(ref Verticies, vertexbuffer);
+        quadRequest = AsyncGPUReadback.RequestIntoNativeArray<uint>(ref Quads, quadbuffer);
+        StartCoroutine(WaitForRequests());
     }
 
-    void Update()
+    public void OnDestroy()
     {
-        if (meshNeedsApply)
+        vertexbuffer.Release();
+        quadbuffer.Release();
+        Verticies.Dispose();
+        Quads.Dispose();
+        blockmapbuffer.Release();
+        vertcountbuffer.Release();
+        quadcountbuffer.Release();
+    }
+
+    IEnumerator WaitForRequests()
+    {
+        while(!vertexRequest.done || !quadRequest.done)
         {
-            applyUpdatedMesh();
+            yield return 0;
         }
+        uint[] temp = new uint[1];
+        vertcountbuffer.GetData(temp);
+        VertexCount = temp[0];
+        quadcountbuffer.GetData(temp);
+        QuadCount = temp[0];
+        applyUpdatedMesh();
+        //WorldBehavior.instance.chunkCurrentlyGenerating = false;
     }
 
     void applyUpdatedMesh()
     {
         Mesh m = meshFilter.mesh;
         m.Clear();
-        m.SetVertexBufferParams(Vertices.Count, VoxelData.VertexBufferLayout);
-        m.SetIndexBufferParams(Triangles.Count, IndexFormat.UInt32);
-        m.SetVertexBufferData(Vertices, 0, 0, Vertices.Count);
-        m.SetIndexBufferData(Triangles, 0, 0, Triangles.Count);
-        SubMeshDescriptor smd = new SubMeshDescriptor()
-        {
-            firstVertex = 0,
-            vertexCount = Vertices.Count,
-            baseVertex = 0,
-            topology = MeshTopology.Triangles,
-            indexStart = 0,
-            indexCount = Triangles.Count,
-        };
-        m.SetSubMesh(0, smd);
+        m.SetVertexBufferParams(Verticies.Length, VoxelData.VertexBufferLayout);
+        m.SetIndexBufferParams(Quads.Length, IndexFormat.UInt32);
+        m.SetVertexBufferData(Verticies, 0, 0, (int)VertexCount, flags: (MeshUpdateFlags)15);
+        m.SetIndexBufferData(Quads, 0, 0, (int)QuadCount, flags: (MeshUpdateFlags)15);
+        m.SetSubMesh(0, new SubMeshDescriptor(0, (int)QuadCount, MeshTopology.Quads));
         m.RecalculateBounds();
         meshFilter.mesh = m;
         meshCollider.sharedMesh = m;
@@ -76,40 +146,9 @@ public class ChunkBehavior : MonoBehaviour
         }
         else
         {
-            removeVoxelAt(localpos);
+            //removeVoxelAt(localpos);
             WorldBehavior.instance.blockChangeLog[bounds.min + localpos] = VOXELTYPE.NONE;
         }
-    }
-
-    private void removeVoxelAt(Vector3Int pos)
-    {
-        System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch(); // Debug
-        sw.Start(); // Debug
-        VoxelBase vb = VoxelData.getVoxelType(ChunkModelGenerator.voxelAtPoint(bounds.min + pos));
-        for(int d = 0; d < 6; d++)
-        {
-            if (isVoxelSideVisible(pos, (DIRECTION)d))
-            {
-                List<Vector3> l = vb.makeVoxelSideVertsAt(pos, (DIRECTION)d);
-                for (int j = 0; j < Vertices.Count; j++)
-                {
-                    if (l.Count < Vertices.Count - j)
-                    {
-                        if (Vertices[j].position == l[0] && Vertices[j + 1].position == l[1] && Vertices[j + 2].position == l[2] && Vertices[j + 3].position == l[3])
-                        {
-
-                            Triangles.RemoveAll(x => x == j);
-                            Triangles.RemoveAll(x => x == j + 1);
-                            Triangles.RemoveAll(x => x == j + 2);
-                            Triangles.RemoveAll(x => x == j + 3);
-                        }
-                    }
-                }
-            }
-        }
-        sw.Stop(); // Debug
-        Debug.Log("Removing Voxel from mesh for the chunk at " + bounds.min + " took " + sw.ElapsedMilliseconds / 1000f + " seconds"); // Debug
-        applyUpdatedMesh();
     }
 
     public void addVoxelAt(Vector3Int pos, VOXELTYPE blocktype)
@@ -122,93 +161,6 @@ public class ChunkBehavior : MonoBehaviour
 
     const int numOfThreads = 8;
 
-    void voxelGenerationTask()
-    {
-        chunkMutex.WaitOne();
-        System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch(); // Debug
-        sw.Start(); // Debug
-        Vertices = new List<VertexBufferStruct>();
-        Triangles = new List<int>();
-        List<VertexBufferStruct>[] verts = new List<VertexBufferStruct>[numOfThreads];
-        List<int>[] tris = new List<int>[numOfThreads];
-        Task[] tasks = new Task[numOfThreads];
-        for(int i = 0; i < tasks.Length; i++)
-        {
-            int passval = i;
-            tasks[i] = Task.Run(() => { generate(passval * (bounds.size.x / tasks.Length), (passval + 1) * (bounds.size.x / tasks.Length), passval); });
-        }
-        /*Stack<Vector3Int> stack = new Stack<Vector3Int>(bounds.size.x * bounds.size.y * bounds.size.z);
-        stack.Push(new Vector3Int(0, 0, 0));
-        while(stack.Count > 0)
-        {
-            Vector3Int p = stack.Pop();
-            checklist[p.x, p.y, p.z] = true;
-            for (int d = 0; d < 6; d++)
-            {
-                Vector3Int temp = p + VoxelData.DIRECTIONVECTORS[(DIRECTION)d];
-                if (isWithinBounds(temp) && !checklist[temp.x, temp.y, temp.z] && (isPerimeterBlock(temp) || modeldata[p.x, p.y, p.z] == VOXELTYPE.NONE))
-                {
-                    stack.Push(temp);
-                }
-            }
-            if (modeldata[p.x, p.y, p.z] != VOXELTYPE.NONE)
-            {
-                for (int d = 0; d < 6; d++)
-                {
-                    if (isVoxelSideVisible(p, (DIRECTION)d))
-                    {
-                        VoxelBase vb = VoxelData.getVoxelType(modeldata[p.x, p.y, p.z]);
-                        outputvertices.AddRange(vb.makeVoxelSideVertsAt(p, (DIRECTION)d).ToArray());
-                        outputuvs.AddRange(vb.getVoxelUVs((DIRECTION)d).ToArray());
-                        outputtriangles.AddRange(vb.getTriangles(ref vertexindex).ToArray());
-                    }
-
-                }
-            }
-        }*/
-        Task.WaitAll(tasks);
-        for(int i = 0; i < tasks.Length; i++)
-        {
-            for (int j = 0; j < tris[i].Count; j++)
-            {
-                Triangles.Add(tris[i][j] + Vertices.Count);
-            }
-            Vertices.AddRange(verts[i]);
-        }
-        meshNeedsApply = true;
-        sw.Stop(); // Debug
-        Debug.Log("Generating Voxels for the chunk at " + bounds.min + " took " + sw.ElapsedMilliseconds/1000f + " seconds"); // Debug
-        chunkMutex.ReleaseMutex();
-
-        void generate(int lower, int upper, int threadNum)
-        {
-            verts[threadNum] = new List<VertexBufferStruct>();
-            tris[threadNum] = new List<int>();
-            for (int x = lower; x < upper; x++)
-            {
-                for (int y = 0; y < bounds.size.y; y++)
-                {
-                    for (int z = 0; z < bounds.size.z; z++)
-                    {
-                        Vector3Int p = new Vector3Int(x, y, z);
-                        VOXELTYPE currentBlock = ChunkModelGenerator.voxelAtPoint(bounds.min + new Vector3Int(x, y, z));
-                        if (currentBlock != VOXELTYPE.NONE)
-                        {
-                            for (int d = 0; d < 6; d++)
-                            {
-                                if (isVoxelSideVisible(p, (DIRECTION)d))
-                                {
-                                    VoxelBase vb = VoxelData.getVoxelType(currentBlock);
-                                    vb.appendVoxelAt(p, (DIRECTION)d, ref verts[threadNum], ref tris[threadNum]);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
     /***********************End of Threaded Tasks***************************/
     private bool isWithinBounds(Vector3Int pos)
     {

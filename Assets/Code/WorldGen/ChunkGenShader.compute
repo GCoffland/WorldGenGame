@@ -1,0 +1,117 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+#define THREADS 4
+#define X_NEG 0
+#define X_POS 1
+#define Y_NEG 2
+#define Y_POS 3
+#define Z_NEG 4
+#define Z_POS 5
+#define FACES_PER_VOXEL 6
+#define VERTS_PER_FACE 4
+#define AIR 0
+#define DIRT 1
+#define GRASS 2
+
+static float3 DIRECTIONS[6] =   { float3(-1,0,0), float3(1,0,0), float3(0,-1,0), float3(0,1,0), float3(0,0,-1), float3(0,0,1) };
+static float3 FACES[6][4] = {   { float3(0, 0, 1), float3(0, 1, 1), float3(0, 1, 0), float3(0, 0, 0)},      //X_NEG
+                                { float3(1, 0, 0), float3(1, 1, 0), float3(1, 1, 1), float3(1, 0, 1)},      //X_POS
+                                { float3(0, 0, 1), float3(0, 0, 0), float3(1, 0, 0), float3(1, 0, 1)},      //Y_NEG
+                                { float3(0, 1, 0), float3(0, 1, 1), float3(1, 1, 1), float3(1, 1, 0)},      //Y_POS
+                                { float3(0, 0, 0), float3(0, 1, 0), float3(1, 1, 0), float3(1, 0, 0)},      //Z_NEG
+                                { float3(1, 0, 1), float3(1, 1, 1), float3(0, 1, 1), float3(0, 0, 1)} };    //Z_POS
+
+struct VertexBufferStruct
+{
+    float3 position;
+    float3 normal;
+    float2 texcoord;
+};
+
+struct FourVertexBufferStruct
+{
+    VertexBufferStruct structs[4];
+};
+
+struct QuadBufferStruct
+{
+    uint indicies[4];
+};
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+uint3 DispatchArgs;
+StructuredBuffer<uint> BlockMap;
+RWStructuredBuffer<uint> VertexCount;
+RWStructuredBuffer<FourVertexBufferStruct> VertexResult;
+RWStructuredBuffer<uint> QuadCount;
+RWStructuredBuffer<QuadBufferStruct> QuadResult;
+
+uint Calc1dID(uint3 id)
+{
+    return (id[0]) + (id[1] * THREADS * DispatchArgs[0]) + (id[2] * THREADS * DispatchArgs[0] * THREADS * DispatchArgs[1]);
+}
+
+uint GetBlock(int3 local_pos)
+{
+    local_pos += int3(1, 1, 1);  // offset because there is a 1 block buffer all around the BlockMap
+    int index1d = Calc1dID(local_pos);
+    return BlockMap[index1d];
+}
+
+int GetBlock(float3 pos)
+{
+    return GetBlock(int3((int)pos[0], (int)pos[1], (int)pos[2]));
+}
+
+void DrawFaceQuads(uint starting_vert_index)
+{
+    int quad_index = QuadResult.IncrementCounter();
+    InterlockedAdd(QuadCount[0], 4);
+    for(int i = 0; i < VERTS_PER_FACE; i++)
+    {
+        QuadResult[quad_index].indicies[i] = starting_vert_index + i;
+    }
+}
+
+void DrawFaceVerticies(int face_index, float3 local_position, int dir_index)
+{
+    InterlockedAdd(VertexCount[0], 4);
+    for(int i = 0; i < VERTS_PER_FACE; i++)
+    {
+        VertexResult[face_index].structs[i].position = local_position + FACES[dir_index][i];
+        VertexResult[face_index].structs[i].normal = DIRECTIONS[dir_index];
+        VertexResult[face_index].structs[i].texcoord = (float2)FACES[Z_NEG][i];
+    }
+}
+
+void DrawFace(float3 local_position, int dir_index)
+{
+    int face_index = VertexResult.IncrementCounter(); // Calculate starting index in the VertexResult buffer
+    DrawFaceVerticies(face_index, local_position, dir_index);
+    DrawFaceQuads(face_index * VERTS_PER_FACE);
+}
+
+void DrawBlock(uint3 id, int block_type, float3 local_position)
+{
+    int id1d = Calc1dID(id);
+    for(int i = 0; i < FACES_PER_VOXEL; i++)
+    {
+        if(GetBlock(local_position + DIRECTIONS[i]) == 0)
+        {
+            DrawFace(local_position, i);
+        }
+    }
+}
+
+[numthreads(THREADS,THREADS,THREADS)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    float3 local_position = (float3)id;
+    int block_type = GetBlock(local_position);
+    if(block_type != 0)
+    {
+        DrawBlock(id, block_type, local_position);
+    }
+}
