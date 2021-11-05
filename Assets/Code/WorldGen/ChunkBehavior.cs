@@ -22,7 +22,6 @@ public class ChunkBehavior : MonoBehaviour
     private SpawnedState state = SpawnedState.Uninitialized;
 
     NativeArray<VOXELTYPE> blockMap;
-    Mesh mesh;
 
     void Awake()
     {
@@ -43,7 +42,10 @@ public class ChunkBehavior : MonoBehaviour
 
     private void OnBecameVisible()
     {
-        _ = Spawn();
+        if(state == SpawnedState.Uninitialized)
+        {
+            _ = Spawn();
+        }
     }
 
     void OnDestroy()
@@ -53,37 +55,26 @@ public class ChunkBehavior : MonoBehaviour
 
     public async Task Spawn()
     {
-        bounds = new BoundsInt(transform.position.ToVector3Int(), Constants.ChunkSize);
         state = SpawnedState.Spawning;
+        bounds = new BoundsInt(transform.position.ToVector3Int(), Constants.ChunkSize);
         blockMap = new NativeArray<VOXELTYPE>((bounds.size.x + 2) * (bounds.size.y + 2) * (bounds.size.z + 2), Allocator.Persistent);
-        mesh = meshFilter.mesh;
-        if (mesh == null)
+        if (meshFilter.mesh == null)
         {
-            mesh = new Mesh();
+            meshFilter.mesh = new Mesh();
         }
         await Generate();
         state = SpawnedState.Spawned;
     }
 
-    async Task Generate()
+    private async Task Generate()
     {
-        JobHandle modelreq = ChunkModelGenerator.GenerateBlockmap(ref blockMap, bounds.size, bounds.position);
-        while (!modelreq.IsCompleted)
-        {
-            await Task.Yield();
-        }
-        modelreq.Complete();
-        Task meshreq = MeshGenerator.GenerateMeshData(blockMap, mesh);
-        while (!meshreq.IsCompleted)
-        {
-            await Task.Yield();
-        }
-        meshFilter.mesh = mesh;
+        await ChunkModelGenerator.GenerateBlockmap(blockMap, bounds.size, bounds.position);
+        await MeshGenerator.GenerateMeshData(blockMap, meshFilter.mesh);
         WorldBehavior.instance.chunkCurrentlyGenerating = false;
     }
 
     public void removeBlockAt(Vector3Int localpos)
     {
-        UnityEngine.Debug.Log("Tried to remove a block at " + localpos);
+        Debug.Log("Tried to remove a block at " + localpos);
     }
 }

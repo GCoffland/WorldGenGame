@@ -28,7 +28,6 @@ namespace WorldGeneration
         internal ComputeShader computeShader;
         internal static MeshGenerator Singleton;
 
-        const int BufferElementCapacity = 128 * 128 * 128;
         private int[] dispatchArgs;
 
         private NativeArray<VertexBufferStruct> Verticies;
@@ -39,8 +38,6 @@ namespace WorldGeneration
         ComputeBuffer quadbuffer;
         ComputeBuffer blockmapbuffer;
         ComputeBuffer bufferlengthsbuffer;
-
-        Mutex mutex = new Mutex();
 
         private void Awake()
         {
@@ -58,12 +55,12 @@ namespace WorldGeneration
             dispatchArgs[1] = (Constants.ChunkSize.y / (int)temp[1]);
             dispatchArgs[2] = (Constants.ChunkSize.z / (int)temp[2]);
 
-            Verticies = new NativeArray<VertexBufferStruct>(BufferElementCapacity, Allocator.Persistent);
-            Quads = new NativeArray<int>(BufferElementCapacity, Allocator.Persistent);
+            Verticies = new NativeArray<VertexBufferStruct>(Constants.MaxPossibleVerticies, Allocator.Persistent);
+            Quads = new NativeArray<int>(Constants.MaxPossibleVerticies, Allocator.Persistent);
             BufferCounts = new NativeArray<int>(2, Allocator.Persistent);
 
-            vertexbuffer = new ComputeBuffer(BufferElementCapacity / 4, 128, ComputeBufferType.Counter | ComputeBufferType.Structured);
-            quadbuffer = new ComputeBuffer(BufferElementCapacity / 4, 16, ComputeBufferType.Counter | ComputeBufferType.Structured);
+            vertexbuffer = new ComputeBuffer(Constants.MaxPossibleVerticies / 4, 128, ComputeBufferType.Counter | ComputeBufferType.Structured);
+            quadbuffer = new ComputeBuffer(Constants.MaxPossibleVerticies / 4, 16, ComputeBufferType.Counter | ComputeBufferType.Structured);
             bufferlengthsbuffer = new ComputeBuffer(2, 4);
             blockmapbuffer = new ComputeBuffer(Constants.BlockMapLength, 4, ComputeBufferType.Default);
 
@@ -79,9 +76,19 @@ namespace WorldGeneration
             ReleaseResources();
         }
 
+        private int taskID = 0;
+
+        Queue<int> requests = new Queue<int>();
+
         public static async Task GenerateMeshData(NativeArray<VOXELTYPE> blockmap, Mesh mesh)
         {
-            await Singleton.aquireMutex();
+            int id = Interlocked.Increment(ref Singleton.taskID);
+            Singleton.requests.Enqueue(id);
+            Debug.Log("Queued Task: " + id);
+            while(Singleton.requests.Peek() != id)
+            {
+                await Task.Yield();
+            }
             Singleton.state = GeneratorState.Busy;
 
             Singleton.SetDataAndDispatch(blockmap);
@@ -90,18 +97,7 @@ namespace WorldGeneration
             Singleton.applyUpdatedMesh(mesh);
 
             Singleton.state = GeneratorState.Ready;
-            Singleton.mutex.ReleaseMutex();
-        }
-
-        private async Task aquireMutex()
-        {
-            bool aquired = false;
-            Monitor.TryEnter(mutex, 0, ref aquired);
-            while (!aquired)
-            {
-                await Task.Yield();
-                Monitor.TryEnter(mutex, 0, ref aquired);
-            }
+            Singleton.requests.Dequeue();
         }
 
         private void ResetCounters()

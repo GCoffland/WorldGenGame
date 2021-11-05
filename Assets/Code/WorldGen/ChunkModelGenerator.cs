@@ -81,10 +81,16 @@ namespace WorldGeneration
 
         internal static int seed;
 
-        public static JobHandle GenerateBlockmap(ref NativeArray<VOXELTYPE> block_map, Vector3Int size, Vector3Int global_position)
+        public static async Task<NativeArray<VOXELTYPE>> GenerateBlockmap(NativeArray<VOXELTYPE> block_map, Vector3Int size, Vector3Int global_position)
         {
             ModelGenJob gen = new ModelGenJob(ref block_map, size, global_position);
-            return gen.Schedule();
+            JobHandle handle = gen.Schedule();
+            while (!handle.IsCompleted)
+            {
+                await Task.Yield();
+            }
+            handle.Complete();
+            return block_map;
         }
 
         private void Awake()

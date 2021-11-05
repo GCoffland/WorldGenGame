@@ -48,6 +48,14 @@ namespace WorldGeneration
             }
         }
 
+        public static int MaxPossibleVerticies
+        {
+            get
+            {
+                return (ChunkSize.x * ChunkSize.y * ChunkSize.z) / 2;
+            }
+        }
+
         public static readonly Vector3Int ChunkSize = new Vector3Int()
         {
             x = 64,
