@@ -33,11 +33,25 @@ namespace WorldGeneration
     {
         public const float TNF = 0.25f; // Texture Normalization Factor (1 / the number of textures in the x and y directions)
 
+        public const float MaxRenderDistance = 100f;
+
+        public const int MaxActiveChunkCount = 1000;
+
         public static readonly VertexAttributeDescriptor[] VertexBufferLayout = new VertexAttributeDescriptor[]
         {
             new VertexAttributeDescriptor(VertexAttribute.Position, VertexAttributeFormat.Float32, 3),
             new VertexAttributeDescriptor(VertexAttribute.Normal, VertexAttributeFormat.Float32, 3),
             new VertexAttributeDescriptor(VertexAttribute.TexCoord0, VertexAttributeFormat.Float32, 2),
+        };
+
+        public static readonly Vector3Int[] Directions = new Vector3Int[]
+        {
+            Vector3Int.left,
+            Vector3Int.right,
+            Vector3Int.down,
+            Vector3Int.up,
+            Vector3Int.back,
+            Vector3Int.forward
         };
 
         public static int BlockMapLength

@@ -2,92 +2,53 @@
 using System.Collections.Generic;
 using UnityEngine;
 using WorldGeneration;
+using System.Threading.Tasks;
+using UnityEngine.Pool;
 
 public class WorldBehavior : MonoBehaviour
 {
-    public static WorldBehavior instance;
+    public static WorldBehavior Singleton;
     public GameObject chunkPrefab;
-    public List<GameObject> players;
+    public GameObject[] players;
     private Hashtable activeChunks = new Hashtable();
-    public Dictionary<Vector3Int, VOXELTYPE> blockChangeLog = new Dictionary<Vector3Int, VOXELTYPE>();
-    public bool chunkCurrentlyGenerating = false;
-    private Queue<Vector3Int> chunkGenQueue = new Queue<Vector3Int>();
-
-
 
     // Start is called before the first frame update
-    void Start()
+    private void Start()
     {
-        instance = this;
-        generationRadius = Constants.ChunkSize.x * generationRadius;
-        generationHeight = Constants.ChunkSize.x * generationHeight;
-        foreach (GameObject player in players)
+        Singleton = this;
+
+        for (int i = 0; i < players.Length; i++)
         {
-            StartCoroutine(loadChunksAroundPlayer(player));
+            Vector3Int playerpos = players[i].transform.position.RoundToChunkChunkPos();
+            InstantiateChunk(playerpos);
         }
-    }
 
-    private void Update()
-    {
-        if(chunkGenQueue.Count > 0 && !chunkCurrentlyGenerating)
+        ChunkBehavior.onAnyChunkStateChanged += (ChunkBehavior cb) =>
         {
-            SpawnChunk(new BoundsInt(chunkGenQueue.Dequeue(), Constants.ChunkSize));
-        }
-    }
-
-    void queueChunk(Vector3Int position)
-    {
-        chunkGenQueue.Enqueue(position);
-    }
-
-    public GameObject SpawnChunk(BoundsInt bounds)
-    {
-        //Debug.Log("Spawning Chunk at: " + bounds.position);
-        chunkCurrentlyGenerating = true;
-        GameObject ret = Instantiate(chunkPrefab, bounds.position, Quaternion.identity, transform);
-        activeChunks.Add(bounds.position, ret);
-        //_ = ret.GetComponent<ChunkBehavior>().Spawn();
-        return ret;
-    }
-
-    private int generationRadius = 2;
-    private int generationHeight = 3;
-
-    IEnumerator loadChunksAroundPlayer(GameObject player)
-    {
-        while (true)
-        {
-            Vector3Int playerpos = player.transform.position.RoundToChunkChunkPos();
-            for (int x = playerpos.x - generationRadius; x < playerpos.x + generationRadius; x += Constants.ChunkSize.x)
+            if(cb.state == ChunkBehavior.SpawnedState.Spawned)
             {
-                for (int y = playerpos.y - generationHeight; y < playerpos.y + generationHeight; y += Constants.ChunkSize.y)
-                {
-                    for (int z = playerpos.z - generationRadius; z < playerpos.z + generationRadius; z += Constants.ChunkSize.z)
-                    {
-                        Vector3Int temp = new Vector3Int(x, y, z);
-                        if (!activeChunks.Contains(temp) && !chunkGenQueue.Contains(temp))
-                        {
-                            queueChunk(temp);
-                        }
-                    }
-                }
+                InstantiateSurroundingChunks(cb.bounds.position);
             }
-            yield return 0;
+        };
+    }
+
+    public void InstantiateSurroundingChunks(Vector3Int pos)
+    {
+        for(int i = 0; i < Constants.Directions.Length; i++)
+        {
+            Vector3Int target = pos + (Constants.Directions[i] * Constants.ChunkSize[i / 2]);
+            if (!activeChunks.Contains(target))
+            {
+                InstantiateChunk(target);
+            }
         }
     }
 
-    public void removeBlockAt(Vector3Int pos)
+    public GameObject InstantiateChunk(Vector3Int pos)
     {
-        GameObject go = (GameObject)activeChunks[pos.RoundToChunkChunkPos()];
-        if (go == null)
-        {
-            Debug.Log("Null GameObject in activeChunks HashTable at Vector: " + pos.RoundToChunkChunkPos());
-        }
-        else
-        {
-            Debug.Log("Trying to remove Voxel from pos: " + pos);
-            ChunkBehavior cb = go.GetComponent<ChunkBehavior>();
-            cb.removeBlockAt(pos - Vector3Int.FloorToInt(go.transform.position));
-        }
+        Debug.Log("Instantaiting Chunk at: " + pos);
+        GameObject ret = Instantiate(chunkPrefab, pos, Quaternion.identity, transform);
+        activeChunks.Add(pos, ret);
+        return ret;
     }
 }

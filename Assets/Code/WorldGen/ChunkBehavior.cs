@@ -7,27 +7,56 @@ using System.Threading;
 using System.Threading.Tasks;
 using WorldGeneration;
 using Unity.Jobs;
+using System;
 
 public class ChunkBehavior : MonoBehaviour
 {
-    private BoundsInt bounds;
+    public static event Action<ChunkBehavior> onAnyChunkStateChanged;
+    public event Action onChunkStateChanged;
 
-    private MeshGenerator meshGenerator;
-    private MeshFilter meshFilter;
-    private enum SpawnedState {
+    public SpawnedState state
+    {
+        get
+        {
+            return _state;
+        }
+        set
+        {
+            if(value == _state)
+            {
+                return;
+            }
+            _state = value;
+            onAnyChunkStateChanged?.Invoke(this);
+            onChunkStateChanged?.Invoke();
+        }
+    }
+    public BoundsInt bounds
+    {
+        get;
+        private set;
+    }
+
+    public enum SpawnedState
+    {
         Uninitialized,
+        Initialized,
         Spawning,
         Spawned
     };
-    private SpawnedState state = SpawnedState.Uninitialized;
+
+    private MeshFilter meshFilter;
+    private MeshCollider meshCollider;
+    private SpawnedState _state;
 
     NativeArray<VOXELTYPE> blockMap;
 
     void Awake()
     {
-        meshGenerator = GetComponent<MeshGenerator>();
-        meshFilter = GetComponent<MeshFilter>();
-        if (state == SpawnedState.Uninitialized)
+        meshFilter = GetComponent<MeshFilter>();        // assign fields
+        meshCollider = GetComponent<MeshCollider>();
+
+        if (state == SpawnedState.Uninitialized)        // make mesh appear to be a large cube
         {
             Vector3[] verts = meshFilter.mesh.vertices;
             for (int i = 0; i < verts.Length; i++)
@@ -37,18 +66,21 @@ public class ChunkBehavior : MonoBehaviour
             }
             meshFilter.mesh.vertices = verts;
         }
-        meshFilter.mesh.RecalculateBounds();
+        bounds = new BoundsInt(transform.position.ToVector3Int(), Constants.ChunkSize);
+        meshFilter.mesh.bounds = new Bounds(bounds.center, bounds.size);
+
+        state = SpawnedState.Initialized;
     }
 
     private void OnBecameVisible()
     {
-        if(state == SpawnedState.Uninitialized)
+        if(state <= SpawnedState.Initialized)
         {
             _ = Spawn();
         }
     }
 
-    void OnDestroy()
+    private void OnDestroy()
     {
         if (blockMap.IsCreated) blockMap.Dispose();
     }
@@ -56,25 +88,16 @@ public class ChunkBehavior : MonoBehaviour
     public async Task Spawn()
     {
         state = SpawnedState.Spawning;
-        bounds = new BoundsInt(transform.position.ToVector3Int(), Constants.ChunkSize);
         blockMap = new NativeArray<VOXELTYPE>((bounds.size.x + 2) * (bounds.size.y + 2) * (bounds.size.z + 2), Allocator.Persistent);
-        if (meshFilter.mesh == null)
-        {
-            meshFilter.mesh = new Mesh();
-        }
+        meshFilter.sharedMesh = new Mesh();
         await Generate();
         state = SpawnedState.Spawned;
     }
 
     private async Task Generate()
     {
-        await ChunkModelGenerator.GenerateBlockmap(blockMap, bounds.size, bounds.position);
+        await ChunkModelGenerator.GenerateBlockmap(blockMap, bounds.position);
         await MeshGenerator.GenerateMeshData(blockMap, meshFilter.mesh);
-        WorldBehavior.instance.chunkCurrentlyGenerating = false;
-    }
-
-    public void removeBlockAt(Vector3Int localpos)
-    {
-        Debug.Log("Tried to remove a block at " + localpos);
+        meshCollider.sharedMesh = meshFilter.sharedMesh;
     }
 }

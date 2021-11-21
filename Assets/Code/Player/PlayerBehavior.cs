@@ -56,7 +56,7 @@ public class PlayerBehavior : MonoBehaviour
         {
             if(selectedBlock != null)
             {
-                WorldBehavior.instance.removeBlockAt((Vector3Int)v);
+                //WorldBehavior.Singleton.removeBlockAt((Vector3Int)v);
             }
         }
         if (Input.GetButtonDown("NoClip"))
