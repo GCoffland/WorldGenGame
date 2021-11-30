@@ -67,7 +67,7 @@ public class ChunkBehavior : MonoBehaviour
             meshFilter.mesh.vertices = verts;
         }
         bounds = new BoundsInt(transform.position.ToVector3Int(), Constants.ChunkSize);
-        meshFilter.mesh.bounds = new Bounds(bounds.center, bounds.size);
+        meshFilter.mesh.bounds = new Bounds(bounds.size / 2, bounds.size);
 
         state = SpawnedState.Initialized;
     }
@@ -99,5 +99,19 @@ public class ChunkBehavior : MonoBehaviour
         await ChunkModelGenerator.GenerateBlockmap(blockMap, bounds.position);
         await MeshGenerator.GenerateMeshData(blockMap, meshFilter.mesh);
         meshCollider.sharedMesh = meshFilter.sharedMesh;
+    }
+
+    public BlockData this[int x, int y, int z]
+    {
+        get
+        {
+            BlockData ret = new BlockData();
+            ret.type = blockMap.GetAsChunk<VOXELTYPE>(x, y, z);
+            return ret;
+        }
+        set
+        {
+            blockMap.SetAsChunk<VOXELTYPE>(x, y, z, value.type);
+        }
     }
 }

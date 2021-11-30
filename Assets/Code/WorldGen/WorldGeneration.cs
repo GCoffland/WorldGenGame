@@ -2,6 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using System;
+using System.Runtime;
+using Unity.Collections;
 
 namespace WorldGeneration
 {
@@ -27,6 +30,11 @@ namespace WorldGeneration
         public Vector3 position;
         public Vector3 normal;
         public Vector2 TexCoord;
+    }
+
+    public struct BlockData
+    {
+        public VOXELTYPE type;
     }
 
     public static class Constants
@@ -81,20 +89,47 @@ namespace WorldGeneration
     public static class ClassAdditions
     {
         /**************CHUNK INDEXING AND POSITIONING**************/
-        public static Vector3Int RoundToChunkChunkPos(this Vector3Int vec)
+        /// <summary>
+        /// Rounds the given vector to the postion of the chunk that contains the vector
+        /// </summary>
+        /// <param name="vec"></param>
+        /// <returns>The world postion of the chunk that contains the input vector</returns>
+        public static Vector3Int RoundToChunkPos(this Vector3Int vec)
         {
             return new Vector3Int(Mathf.FloorToInt(vec.x / Constants.ChunkSize.x) * Constants.ChunkSize.x,
                                   Mathf.FloorToInt(vec.y / Constants.ChunkSize.y) * Constants.ChunkSize.y,
                                   Mathf.FloorToInt(vec.z / Constants.ChunkSize.z) * Constants.ChunkSize.z);
         }
 
-        public static Vector3Int RoundToChunkChunkPos(this Vector3 vec)
+        /// <summary>
+        /// Rounds the given vector to the postion of the chunk that contains the vector
+        /// </summary>
+        /// <param name="vec"></param>
+        /// <returns>The world postion of the chunk that contains the input vector</returns>
+        public static Vector3Int RoundToChunkPos(this Vector3 vec)
         {
             return new Vector3Int(Mathf.FloorToInt(vec.x / Constants.ChunkSize.x) * Constants.ChunkSize.x,
                                   Mathf.FloorToInt(vec.y / Constants.ChunkSize.y) * Constants.ChunkSize.y,
                                   Mathf.FloorToInt(vec.z / Constants.ChunkSize.z) * Constants.ChunkSize.z);
         }
 
+        /// <summary>
+        /// Modulates the given vector with the global chunk size, to return the chunk-relative block position
+        /// </summary>
+        /// <param name="vec"></param>
+        /// <returns>The block position within a chunk pointed to by vec</returns>
+        public static Vector3Int WorldPosToBlockIndex(this Vector3Int vec)
+        {
+            return new Vector3Int(((vec.x % Constants.ChunkSize.x) + Constants.ChunkSize.x) % Constants.ChunkSize.x,
+                ((vec.y % Constants.ChunkSize.y) + Constants.ChunkSize.y) % Constants.ChunkSize.y,
+                ((vec.z % Constants.ChunkSize.z) + Constants.ChunkSize.z) % Constants.ChunkSize.z);
+        }
+
+        /// <summary>
+        /// Scales the vector from chunk-index-space to world-space
+        /// </summary>
+        /// <param name="vec"></param>
+        /// <returns>The world position of the chunk that is referred to by vec</returns>
         public static Vector3Int ChunkIndexToWorldPos(this Vector3Int vec)
         {
             return new Vector3Int(vec.x * Constants.ChunkSize.x,
@@ -102,6 +137,11 @@ namespace WorldGeneration
                                   vec.z * Constants.ChunkSize.z);
         }
 
+        /// <summary>
+        /// Scales the vector from world-space to chunk-index-space
+        /// </summary>
+        /// <param name="vec"></param>
+        /// <returns>The chunk-index of the chunk that is at the world-space location of vec</returns>
         public static Vector3Int WorldPosToChunkIndex(this Vector3Int vec)
         {
             return new Vector3Int(Mathf.FloorToInt((float)vec.x / Constants.ChunkSize.x),
@@ -109,6 +149,11 @@ namespace WorldGeneration
                                   Mathf.FloorToInt((float)vec.z / Constants.ChunkSize.z));
         }
 
+        /// <summary>
+        /// Scales the vector from world-space to chunk-index-space
+        /// </summary>
+        /// <param name="vec"></param>
+        /// <returns>The chunk-index of the chunk that is at the world-space location of vec</returns>
         public static Vector3Int WorldPosToChunkIndex(this Vector3 vec)
         {
             return new Vector3Int(Mathf.FloorToInt(vec.x / Constants.ChunkSize.x),
@@ -116,9 +161,42 @@ namespace WorldGeneration
                                   Mathf.FloorToInt(vec.z / Constants.ChunkSize.z));
         }
 
+        /// <summary>
+        /// Converts a Vector3 to a Vector3Int, truncating the floating point components
+        /// </summary>
+        /// <param name="vec"></param>
+        /// <returns>The converted Vector3Int</returns>
         public static Vector3Int ToVector3Int(this Vector3 vec)
         {
             return new Vector3Int((int)vec.x, (int)vec.y, (int)vec.z);
+        }
+
+        /// <summary>
+        /// Get the value in an NativeArray as if it were a 3D array with 1-width padding on each side that is ignored
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="arr"></param>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="z"></param>
+        /// <returns>The value at x, y, z</returns>
+        public static T GetAsChunk<T>(this NativeArray<T> arr, int x, int y, int z) where T : struct
+        {
+            return arr[(1 + x) + ((1 + y) * (Constants.ChunkSize.x + 2)) + ((1 + z) * (((Constants.ChunkSize.x) + 2) * ((Constants.ChunkSize.y) + 2)))];
+        }
+
+        /// <summary>
+        /// Set the value in an NativeArray as if it were a 3D array with 1-width padding on each side that is ignored
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="arr"></param>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="z"></param>
+        /// <param name="value"></param>
+        public static void SetAsChunk<T>(this NativeArray<T> arr, int x, int y, int z, T value) where T : struct
+        {
+            arr[(1 + x) + ((1 + y) * (Constants.ChunkSize.x + 2)) + ((1 + z) * (((Constants.ChunkSize.x) + 2) * ((Constants.ChunkSize.y) + 2)))] = value;
         }
     }
 }

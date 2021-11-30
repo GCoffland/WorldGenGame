@@ -11,7 +11,7 @@ public class WorldBehavior : MonoBehaviour
     public GameObject chunkPrefab;
     public GameObject[] players;
     private Hashtable activeChunks = new Hashtable();
-
+    
     // Start is called before the first frame update
     private void Start()
     {
@@ -19,17 +19,26 @@ public class WorldBehavior : MonoBehaviour
 
         for (int i = 0; i < players.Length; i++)
         {
-            Vector3Int playerpos = players[i].transform.position.RoundToChunkChunkPos();
+            Vector3Int playerpos = players[i].transform.position.RoundToChunkPos();
             InstantiateChunk(playerpos);
         }
 
-        ChunkBehavior.onAnyChunkStateChanged += (ChunkBehavior cb) =>
+        ChunkBehavior.onAnyChunkStateChanged += onChunkFinishLoading;
+        //WaitAndShutOffChunkGen();
+    }
+
+    private void onChunkFinishLoading(ChunkBehavior cb)
+    {
+        if (cb.state == ChunkBehavior.SpawnedState.Spawned)
         {
-            if(cb.state == ChunkBehavior.SpawnedState.Spawned)
-            {
-                InstantiateSurroundingChunks(cb.bounds.position);
-            }
-        };
+            InstantiateSurroundingChunks(cb.bounds.position);
+        }
+    }
+
+    private async void WaitAndShutOffChunkGen()
+    {
+        await Task.Delay(10000);
+        ChunkBehavior.onAnyChunkStateChanged -= onChunkFinishLoading;
     }
 
     public void InstantiateSurroundingChunks(Vector3Int pos)
@@ -46,7 +55,7 @@ public class WorldBehavior : MonoBehaviour
 
     public GameObject InstantiateChunk(Vector3Int pos)
     {
-        Debug.Log("Instantaiting Chunk at: " + pos);
+        //Debug.Log("Instantaiting Chunk at: " + pos);
         GameObject ret = Instantiate(chunkPrefab, pos, Quaternion.identity, transform);
         activeChunks.Add(pos, ret);
         return ret;

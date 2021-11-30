@@ -1,15 +1,16 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
+[RequireComponent(typeof(PlayerInput))]
 public class PlayerBehavior : MonoBehaviour
 {
     public Rigidbody rb;
     public CapsuleCollider cc;
-    public Camera cam;
-    public GameObject blockSelector;
+    public BlockSelector blockSelector;
+    new public Camera camera;
 
-    private GameObject selectedBlock;
     private bool internalNoClip = true;
     private bool noClip
     {
@@ -27,7 +28,6 @@ public class PlayerBehavior : MonoBehaviour
     }
 
     private const float SPEED = 10f;
-    private const float INTERACTDISTANCE = 10f;
 
     // Start is called before the first frame update
     void Start()
@@ -37,79 +37,55 @@ public class PlayerBehavior : MonoBehaviour
         rb.freezeRotation = !noClip;
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+        moveAction = GetComponent<PlayerInput>().actions.FindAction("Move", true);
+        moveAction.Enable();
+        jumpAction = GetComponent<PlayerInput>().actions.FindAction("Jump", true);
+        jumpAction.Enable();
     }
-    
-    // Update is called once per frame
-    void Update()
+
+
+    private void Update()
     {
-        lookAround();
+        ProcessMovement();
+    }
+
+    InputAction moveAction;
+    InputAction jumpAction;
+
+    public void ProcessMovement()
+    {
+        Vector2 moveInput = moveAction.ReadValue<Vector2>();
+        float jumpInput = jumpAction.ReadValue<float>();
         if (noClip)
         {
-            moveNoClip();
+            rb.velocity = (camera.transform.rotation * new Vector3(moveInput.x, jumpInput, moveInput.y)) * SPEED;
         }
         else
         {
-            move();
-        }
-        Vector3Int? v = selectBlock();
-        if (Input.GetButtonDown("Fire1"))
-        {
-            if(selectedBlock != null)
+            Vector3 temp = new Vector3(moveInput.x, 0, moveInput.y) * SPEED;
+            temp = camera.transform.rotation * temp;
+            temp.y = rb.velocity.y;
+            if (jumpAction.WasPressedThisFrame())
             {
-                //WorldBehavior.Singleton.removeBlockAt((Vector3Int)v);
+                temp += Vector3.up * 10;
             }
+            rb.velocity = temp;
         }
-        if (Input.GetButtonDown("NoClip"))
+    }
+
+    public void ProcessFire(InputAction.CallbackContext context)
+    {
+        if (context.phase == InputActionPhase.Started)
+        {
+            Debug.Log("Currently selected block: " + blockSelector.currentBlock.type);
+        }
+    }
+
+    public void ProcessToggleNoClip(InputAction.CallbackContext context)
+    {
+        if(context.phase == InputActionPhase.Started)
         {
             noClip = !noClip;
         }
-    }
-
-    private Vector3 rotation = new Vector3(0, 0, 0);
-
-    private void lookAround()
-    {
-        rotation.x += -Input.GetAxis("Mouse Y");
-        rotation.y += Input.GetAxis("Mouse X");
-        rotation.x = Mathf.Clamp(rotation.x, -89.99f, 89.99f);
-        transform.rotation = Quaternion.Euler(rotation);
-    }
-
-    private void moveNoClip()
-    {
-        rb.velocity = (transform.rotation * new Vector3(Input.GetAxis("Horizontal"), Input.GetAxis("Jump"), Input.GetAxis("Vertical"))) * SPEED;
-    }
-
-    private void move()
-    {
-        Vector3 temp = new Vector3(Input.GetAxis("Horizontal"), 0, Input.GetAxis("Vertical")) * SPEED;
-        temp = transform.rotation * temp;
-        temp.y = rb.velocity.y;
-        rb.velocity = temp;
-        if (Input.GetButtonDown("Jump"))
-        {
-            rb.velocity += Vector3.up * 10;
-        }
-    }
-
-    Vector3Int? selectBlock()
-    {
-        RaycastHit rh;
-        Physics.Raycast(transform.position, transform.rotation * Vector3.forward, out rh, INTERACTDISTANCE);
-        if(rh.collider == null)
-        {
-            selectedBlock = null;
-            blockSelector.SetActive(false);
-            return null;
-        }
-        Vector3 insideblock = rh.point - (rh.normal * 0.001f);
-        Vector3Int v = new Vector3Int(0,0,0);
-        v.x = (int)Mathf.Floor(insideblock.x);
-        v.y = (int)Mathf.Floor(insideblock.y);
-        v.z = (int)Mathf.Floor(insideblock.z);
-        selectedBlock = rh.collider.gameObject;
-        blockSelector.SetActive(true);
-        blockSelector.transform.position = v;
-        return v;
     }
 }

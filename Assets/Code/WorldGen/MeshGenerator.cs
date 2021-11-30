@@ -84,7 +84,7 @@ namespace WorldGeneration
         {
             int id = Interlocked.Increment(ref Singleton.taskID);
             Singleton.requests.Enqueue(id);
-            Debug.Log("Queued Task: " + id);
+            //Debug.Log("Queued Task: " + id);
             while(Singleton.requests.Peek() != id)
             {
                 await Task.Yield();
