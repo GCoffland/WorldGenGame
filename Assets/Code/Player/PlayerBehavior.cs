@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using WorldGeneration;
 
 [RequireComponent(typeof(PlayerInput))]
 public class PlayerBehavior : MonoBehaviour
@@ -77,7 +78,12 @@ public class PlayerBehavior : MonoBehaviour
     {
         if (context.phase == InputActionPhase.Started)
         {
-            Debug.Log("Currently selected block: " + blockSelector.currentBlock.type);
+            Debug.Log("Currently selected block: " + blockSelector.currentBlock);
+            if(blockSelector.currentBlock != VOXELTYPE.NONE)
+            {
+                Vector3Int index = blockSelector.currentBlockIndex;
+                blockSelector.currentChunk[index.x, index.y, index.z] = VOXELTYPE.NONE;
+            }
         }
     }
 

@@ -56,28 +56,17 @@ public class ChunkBehavior : MonoBehaviour
         meshFilter = GetComponent<MeshFilter>();        // assign fields
         meshCollider = GetComponent<MeshCollider>();
 
-        if (state == SpawnedState.Uninitialized)        // make mesh appear to be a large cube
+        Vector3[] verts = meshFilter.mesh.vertices;
+        for (int i = 0; i < verts.Length; i++)  // make mesh appear to be a large cube
         {
-            Vector3[] verts = meshFilter.mesh.vertices;
-            for (int i = 0; i < verts.Length; i++)
-            {
-                verts[i] += Vector3.one / 2;
-                verts[i] = Vector3.Scale(verts[i], Constants.ChunkSize);
-            }
-            meshFilter.mesh.vertices = verts;
+            verts[i] += Vector3.one / 2;
+            verts[i] = Vector3.Scale(verts[i], Constants.ChunkSize);
         }
+        meshFilter.mesh.vertices = verts;
         bounds = new BoundsInt(transform.position.ToVector3Int(), Constants.ChunkSize);
         meshFilter.mesh.bounds = new Bounds(bounds.size / 2, bounds.size);
 
         state = SpawnedState.Initialized;
-    }
-
-    private void OnBecameVisible()
-    {
-        if(state <= SpawnedState.Initialized)
-        {
-            _ = Spawn();
-        }
     }
 
     private void OnDestroy()
@@ -96,22 +85,31 @@ public class ChunkBehavior : MonoBehaviour
 
     private async Task Generate()
     {
+        await GenerateModel();
+        await GenerateMesh();
+    }
+
+    private async Task GenerateModel()
+    {
         await ChunkModelGenerator.GenerateBlockmap(blockMap, bounds.position);
+    }
+
+    private async Task GenerateMesh()
+    {
         await MeshGenerator.GenerateMeshData(blockMap, meshFilter.mesh);
         meshCollider.sharedMesh = meshFilter.sharedMesh;
     }
 
-    public BlockData this[int x, int y, int z]
+    public VOXELTYPE this[int x, int y, int z]
     {
         get
         {
-            BlockData ret = new BlockData();
-            ret.type = blockMap.GetAsChunk<VOXELTYPE>(x, y, z);
-            return ret;
+            return blockMap.GetAsChunk<VOXELTYPE>(x, y, z);
         }
         set
         {
-            blockMap.SetAsChunk<VOXELTYPE>(x, y, z, value.type);
+            blockMap.SetAsChunk<VOXELTYPE>(x, y, z, value);
+            _ = GenerateMesh();
         }
     }
 }

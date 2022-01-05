@@ -32,11 +32,6 @@ namespace WorldGeneration
         public Vector2 TexCoord;
     }
 
-    public struct BlockData
-    {
-        public VOXELTYPE type;
-    }
-
     public static class Constants
     {
         public const float TNF = 0.25f; // Texture Normalization Factor (1 / the number of textures in the x and y directions)
