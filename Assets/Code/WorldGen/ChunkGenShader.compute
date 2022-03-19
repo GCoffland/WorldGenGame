@@ -1,20 +1,15 @@
-﻿// Each #kernel tells which function to compile; you can have many kernels
+﻿#include "WorldGeneration.cs.hlsl"
+
+// Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel CSMain
 
 #define THREADS 4
-#define X_NEG 0
-#define X_POS 1
-#define Y_NEG 2
-#define Y_POS 3
-#define Z_NEG 4
-#define Z_POS 5
 #define FACES_PER_VOXEL 6
 #define VERTS_PER_FACE 4
-#define AIR 0
-#define DIRT 1
-#define GRASS 2
 #define VERTBUFFLENGTH 0
 #define QUADBUFFLENGTH 1
+
+
 
 static float3 DIRECTIONS[6] =   { float3(-1, 0, 0), float3(1, 0, 0), float3(0, -1, 0), float3(0, 1, 0), float3(0, 0, -1), float3(0, 0, 1) };
 static float3 FACES[6][4] = {   { float3(0, 0, 1), float3(0, 1, 1), float3(0, 1, 0), float3(0, 0, 0)},      //X_NEG
@@ -29,13 +24,6 @@ static float2 BLOCKUVS[][6] = { {float2(3, 3), float2(3, 3), float2(3, 3), float
                                 {float2(2, 0), float2(2, 0), float2(2, 0), float2(2, 0), float2(2, 0), float2(2, 0)},   //DIRT
                                 {float2(2, 0), float2(2, 0), float2(2, 0), float2(1, 0), float2(2, 0), float2(2, 0)}    //GRASS
                                 };
-
-struct VertexBufferStruct
-{
-    float3 position;
-    float3 normal;
-    float2 texcoord;
-};
 
 struct FourVertexBufferStruct
 {
@@ -93,7 +81,7 @@ void DrawFaceVerticies(int face_index, float3 local_position, int dir_index, int
     {
         VertexResult[face_index].structs[i].position = local_position + FACES[dir_index][i];
         VertexResult[face_index].structs[i].normal = DIRECTIONS[dir_index];
-        VertexResult[face_index].structs[i].texcoord = ((float2)FACES[Z_NEG][i] + BLOCKUVS[block_type][dir_index]) * UVSIZE;
+        VertexResult[face_index].structs[i].texCoord = ((float2)FACES[DIRECTION_Z_NEG][i] + BLOCKUVS[block_type][dir_index]) * UVSIZE;
     }
 }
 

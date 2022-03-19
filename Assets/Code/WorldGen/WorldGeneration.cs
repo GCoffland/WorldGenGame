@@ -5,9 +5,11 @@ using UnityEngine.Rendering;
 using System;
 using System.Runtime;
 using Unity.Collections;
+using UnityEngine.Experimental.Rendering;
 
 namespace WorldGeneration
 {
+    [GenerateHLSL(PackingRules.Exact, false)]
     public enum DIRECTION
     {
         X_NEG,
@@ -18,6 +20,7 @@ namespace WorldGeneration
         Z_POS,
     };
 
+    [GenerateHLSL(PackingRules.Exact, false)]
     public enum VOXELTYPE
     {
         NONE,
@@ -25,11 +28,12 @@ namespace WorldGeneration
         GRASS
     };
 
-    public struct VertexBufferStruct
+    [GenerateHLSL(PackingRules.Exact, false)]
+    unsafe public struct VertexBufferStruct
     {
         public Vector3 position;
         public Vector3 normal;
-        public Vector2 TexCoord;
+        public Vector2 texCoord;
     }
 
     public static class Constants
@@ -47,6 +51,7 @@ namespace WorldGeneration
             new VertexAttributeDescriptor(VertexAttribute.TexCoord0, VertexAttributeFormat.Float32, 2),
         };
 
+        [HLSLArray(6, typeof(Vector3Int))]
         public static readonly Vector3Int[] Directions = new Vector3Int[]
         {
             Vector3Int.left,
