@@ -21,6 +21,13 @@
 #define VOXELTYPE_DIRT (1)
 #define VOXELTYPE_GRASS (2)
 
+//
+// WorldGeneration.Constants:  static fields
+//
+#define TNF (0.25)
+#define MAX_RENDER_DISTANCE (100)
+#define MAX_ACTIVE_CHUNK_COUNT (1000)
+
 // Generated from WorldGeneration.VertexBufferStruct
 // PackingRules = Exact
 struct VertexBufferStruct

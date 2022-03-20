@@ -36,9 +36,10 @@ namespace WorldGeneration
         public Vector2 texCoord;
     }
 
+    [GenerateHLSL(PackingRules.Exact, false)]
     public static class Constants
     {
-        public const float TNF = 0.25f; // Texture Normalization Factor (1 / the number of textures in the x and y directions)
+        public const float TNF = 1f/4f; // Texture Normalization Factor (1 / the number of textures in the x and y directions)
 
         public const float MaxRenderDistance = 100f;
 
@@ -51,7 +52,6 @@ namespace WorldGeneration
             new VertexAttributeDescriptor(VertexAttribute.TexCoord0, VertexAttributeFormat.Float32, 2),
         };
 
-        [HLSLArray(6, typeof(Vector3Int))]
         public static readonly Vector3Int[] Directions = new Vector3Int[]
         {
             Vector3Int.left,

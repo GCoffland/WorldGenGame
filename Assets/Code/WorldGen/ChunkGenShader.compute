@@ -6,8 +6,8 @@
 #define THREADS 4
 #define FACES_PER_VOXEL 6
 #define VERTS_PER_FACE 4
-#define VERTBUFFLENGTH 0
-#define QUADBUFFLENGTH 1
+#define VERTBUFFLENGTHINDEX 0
+#define QUADBUFFLENGTHINDEX 1
 
 
 
@@ -19,13 +19,13 @@ static float3 FACES[6][4] = {   { float3(0, 0, 1), float3(0, 1, 1), float3(0, 1,
                                 { float3(0, 0, 0), float3(0, 1, 0), float3(1, 1, 0), float3(1, 0, 0)},      //Z_NEG
                                 { float3(1, 0, 1), float3(1, 1, 1), float3(0, 1, 1), float3(0, 0, 1)} };    //Z_POS
 
-#define UVSIZE 0.25              //X_NEG       //X_POS       //Y_NEG       //Y_POS       //Z_NEG       //Z_POS
+                                 //X_NEG       //X_POS       //Y_NEG       //Y_POS       //Z_NEG       //Z_POS
 static float2 BLOCKUVS[][6] = { {float2(3, 3), float2(3, 3), float2(3, 3), float2(3, 3), float2(3, 3), float2(3, 3)},   //AIR/ERROR
                                 {float2(2, 0), float2(2, 0), float2(2, 0), float2(2, 0), float2(2, 0), float2(2, 0)},   //DIRT
                                 {float2(2, 0), float2(2, 0), float2(2, 0), float2(1, 0), float2(2, 0), float2(2, 0)}    //GRASS
                                 };
 
-struct FourVertexBufferStruct
+struct QuadVertexBufferStruct
 {
     VertexBufferStruct structs[4];
 };
@@ -39,7 +39,7 @@ struct QuadBufferStruct
 // with cs.SetTexture
 uint3 DispatchArgs;
 StructuredBuffer<int> BlockMap;
-RWStructuredBuffer<FourVertexBufferStruct> VertexResult;
+RWStructuredBuffer<QuadVertexBufferStruct> VertexResult;
 RWStructuredBuffer<QuadBufferStruct> QuadResult;
 RWStructuredBuffer<int> BufferLengths;
 
@@ -67,7 +67,7 @@ int GetBlock(float3 pos)
 void DrawFaceQuads(uint starting_vert_index)
 {
     int quad_index = QuadResult.IncrementCounter();
-    InterlockedAdd(BufferLengths[QUADBUFFLENGTH], 4);
+    InterlockedAdd(BufferLengths[QUADBUFFLENGTHINDEX], 4);
     for(int i = 0; i < VERTS_PER_FACE; i++)
     {
         QuadResult[quad_index].indicies[i] = starting_vert_index + i;
@@ -76,12 +76,12 @@ void DrawFaceQuads(uint starting_vert_index)
 
 void DrawFaceVerticies(int face_index, float3 local_position, int dir_index, int block_type)
 {
-    InterlockedAdd(BufferLengths[VERTBUFFLENGTH], 4);
+    InterlockedAdd(BufferLengths[VERTBUFFLENGTHINDEX], 4);
     for(int i = 0; i < VERTS_PER_FACE; i++)
     {
         VertexResult[face_index].structs[i].position = local_position + FACES[dir_index][i];
         VertexResult[face_index].structs[i].normal = DIRECTIONS[dir_index];
-        VertexResult[face_index].structs[i].texCoord = ((float2)FACES[DIRECTION_Z_NEG][i] + BLOCKUVS[block_type][dir_index]) * UVSIZE;
+        VertexResult[face_index].structs[i].texCoord = ((float2)FACES[DIRECTION_Z_NEG][i] + BLOCKUVS[block_type][dir_index]) * TNF;
     }
 }
 
