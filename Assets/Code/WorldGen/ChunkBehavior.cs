@@ -49,7 +49,7 @@ public class ChunkBehavior : MonoBehaviour
     private MeshCollider meshCollider;
     private SpawnedState _state;
 
-    NativeArray<VOXELTYPE> blockMap;
+    NativeArray<uint> blockMap;
 
     void Awake()
     {
@@ -60,10 +60,10 @@ public class ChunkBehavior : MonoBehaviour
         for (int i = 0; i < verts.Length; i++)  // make mesh appear to be a large cube
         {
             verts[i] += Vector3.one / 2;
-            verts[i] = Vector3.Scale(verts[i], Constants.ChunkSize);
+            verts[i] = Vector3.Scale(verts[i], WorldGenerationData.ChunkSize);
         }
         meshFilter.mesh.vertices = verts;
-        bounds = new BoundsInt(transform.position.ToVector3Int(), Constants.ChunkSize);
+        bounds = new BoundsInt(transform.position.ToVector3Int(), WorldGenerationData.ChunkSize);
         meshFilter.mesh.bounds = new Bounds(bounds.size / 2, bounds.size);
 
         state = SpawnedState.Initialized;
@@ -77,7 +77,7 @@ public class ChunkBehavior : MonoBehaviour
     public async Task Spawn()
     {
         state = SpawnedState.Spawning;
-        blockMap = new NativeArray<VOXELTYPE>((bounds.size.x + 2) * (bounds.size.y + 2) * (bounds.size.z + 2), Allocator.Persistent);
+        blockMap = new NativeArray<uint>((bounds.size.x + 2) * (bounds.size.y + 2) * (bounds.size.z + 2), Allocator.Persistent);
         meshFilter.sharedMesh = new Mesh();
         await Generate();
         state = SpawnedState.Spawned;
@@ -100,15 +100,15 @@ public class ChunkBehavior : MonoBehaviour
         meshCollider.sharedMesh = meshFilter.sharedMesh;
     }
 
-    public VOXELTYPE this[int x, int y, int z]
+    public uint this[int x, int y, int z]
     {
         get
         {
-            return blockMap.GetAsChunk<VOXELTYPE>(x, y, z);
+            return blockMap.GetAsChunk<uint>(x, y, z);
         }
         set
         {
-            blockMap.SetAsChunk<VOXELTYPE>(x, y, z, value);
+            blockMap.SetAsChunk<uint>(x, y, z, value);
             _ = GenerateMesh();
         }
     }

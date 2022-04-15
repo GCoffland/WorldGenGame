@@ -8,7 +8,7 @@ public class BlockSelector : MonoBehaviour
     [SerializeField]
     new private Transform camera;
     public int interactDistance;
-    public VOXELTYPE currentBlock
+    public uint currentBlock
     {
         get;
         private set;
@@ -41,7 +41,7 @@ public class BlockSelector : MonoBehaviour
         RaycastHit rh;
         if (!Physics.Raycast(camera.transform.position, camera.transform.rotation * Vector3.forward, out rh, interactDistance, layerMask: LayerMask.GetMask("Terrain")))
         {
-            currentBlock = VOXELTYPE.NONE;
+            currentBlock = 0;
             renderer.enabled = false;
             return;
         }

@@ -12,7 +12,7 @@ namespace WorldGeneration
 {
     public struct ModelGenJob : IJob
     {
-        public ModelGenJob(ref NativeArray<VOXELTYPE> block_map, Vector3Int global_pos)
+        public ModelGenJob(ref NativeArray<uint> block_map, Vector3Int global_pos)
         {
             blockMap = block_map;
             globalPosition = global_pos;
@@ -24,7 +24,7 @@ namespace WorldGeneration
             get;
             private set;
         }
-        public NativeArray<VOXELTYPE> blockMap;
+        public NativeArray<uint> blockMap;
         public bool ready
         {
             get;
@@ -40,13 +40,13 @@ namespace WorldGeneration
             Func<float,float,float,float> gradient = (x,y,z) => {
                 return Math.Clamp(y/10, -1f, 1f);
             };
-            for (int x = -1; x < Constants.ChunkSize.x + 1; x++)
+            for (int x = -1; x < WorldGenerationData.ChunkSize.x + 1; x++)
             {
-                for (int y = -1; y < Constants.ChunkSize.y + 1; y++)
+                for (int y = -1; y < WorldGenerationData.ChunkSize.y + 1; y++)
                 {
-                    for (int z = -1; z < Constants.ChunkSize.z + 1; z++)
+                    for (int z = -1; z < WorldGenerationData.ChunkSize.z + 1; z++)
                     {
-                        VOXELTYPE block_type = default;
+                        uint block_type = default;
                         float noise_val = (cellular_noise.GetNoise(x + globalPosition.x - 1, y + globalPosition.y - 1, z + globalPosition.z - 1)
                             + opensimplex_noise.GetNoise(x + globalPosition.x - 1, y + globalPosition.y - 1, z + globalPosition.z - 1)
                             + gradient(x + globalPosition.x - 1, y + globalPosition.y - 1, z + globalPosition.z - 1));
@@ -55,13 +55,13 @@ namespace WorldGeneration
                         noise_val -= 1;
                         if (noise_val < 0.25f)
                         {
-                            block_type = VOXELTYPE.DIRT;
+                            block_type = 1;
                         }
                         else
                         {
-                            block_type = VOXELTYPE.NONE;
+                            block_type = 0;
                         }
-                        blockMap[(x + 1) + ((y + 1) * (Constants.ChunkSize.x + 2)) + ((z + 1) * ((Constants.ChunkSize.x + 2) * (Constants.ChunkSize.y + 2)))] = block_type;
+                        blockMap[(x + 1) + ((y + 1) * (WorldGenerationData.ChunkSize.x + 2)) + ((z + 1) * ((WorldGenerationData.ChunkSize.x + 2) * (WorldGenerationData.ChunkSize.y + 2)))] = block_type;
                     }
                 }
             }
@@ -75,7 +75,7 @@ namespace WorldGeneration
 
         internal static int seed;
 
-        public static async Task<NativeArray<VOXELTYPE>> GenerateBlockmap(NativeArray<VOXELTYPE> block_map, Vector3Int global_position)
+        public static async Task<NativeArray<uint>> GenerateBlockmap(NativeArray<uint> block_map, Vector3Int global_position)
         {
             ModelGenJob gen = new ModelGenJob(ref block_map, global_position);
             JobHandle handle = gen.Schedule();

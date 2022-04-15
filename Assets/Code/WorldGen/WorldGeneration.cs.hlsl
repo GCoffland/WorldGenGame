@@ -22,6 +22,11 @@
 #define VOXELTYPE_GRASS (2)
 
 //
+// WorldGeneration.Constant:  static fields
+//
+#define NUM (5)
+
+//
 // WorldGeneration.Constants:  static fields
 //
 #define TNF (0.25)

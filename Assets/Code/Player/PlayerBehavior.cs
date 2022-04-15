@@ -79,10 +79,10 @@ public class PlayerBehavior : MonoBehaviour
         if (context.phase == InputActionPhase.Started)
         {
             Debug.Log("Currently selected block: " + blockSelector.currentBlock);
-            if(blockSelector.currentBlock != VOXELTYPE.NONE)
+            if(blockSelector.currentBlock != 0)
             {
                 Vector3Int index = blockSelector.currentBlockIndex;
-                blockSelector.currentChunk[index.x, index.y, index.z] = VOXELTYPE.NONE;
+                blockSelector.currentChunk[index.x, index.y, index.z] = 0;
             }
         }
     }
