@@ -40,11 +40,11 @@ namespace WorldGeneration
             Func<float,float,float,float> gradient = (x,y,z) => {
                 return Math.Clamp(y/10, -1f, 1f);
             };
-            for (int x = -1; x < WorldGenerationData.ChunkSize.x + 1; x++)
+            for (int x = -1; x < WorldGenerationGlobals.ChunkSize.x + 1; x++)
             {
-                for (int y = -1; y < WorldGenerationData.ChunkSize.y + 1; y++)
+                for (int y = -1; y < WorldGenerationGlobals.ChunkSize.y + 1; y++)
                 {
-                    for (int z = -1; z < WorldGenerationData.ChunkSize.z + 1; z++)
+                    for (int z = -1; z < WorldGenerationGlobals.ChunkSize.z + 1; z++)
                     {
                         uint block_type = default;
                         float noise_val = (cellular_noise.GetNoise(x + globalPosition.x - 1, y + globalPosition.y - 1, z + globalPosition.z - 1)
@@ -61,7 +61,7 @@ namespace WorldGeneration
                         {
                             block_type = 0;
                         }
-                        blockMap[(x + 1) + ((y + 1) * (WorldGenerationData.ChunkSize.x + 2)) + ((z + 1) * ((WorldGenerationData.ChunkSize.x + 2) * (WorldGenerationData.ChunkSize.y + 2)))] = block_type;
+                        blockMap[(x + 1) + ((y + 1) * (WorldGenerationGlobals.ChunkSize.x + 2)) + ((z + 1) * ((WorldGenerationGlobals.ChunkSize.x + 2) * (WorldGenerationGlobals.ChunkSize.y + 2)))] = block_type;
                     }
                 }
             }

@@ -17,9 +17,9 @@ namespace WorldGeneration
         /// <returns>The world postion of the chunk that contains the input vector</returns>
         public static Vector3Int RoundToChunkPos(this Vector3Int vec)
         {
-            return new Vector3Int(Mathf.FloorToInt(vec.x / WorldGenerationData.ChunkSize.x) * WorldGenerationData.ChunkSize.x,
-                                  Mathf.FloorToInt(vec.y / WorldGenerationData.ChunkSize.y) * WorldGenerationData.ChunkSize.y,
-                                  Mathf.FloorToInt(vec.z / WorldGenerationData.ChunkSize.z) * WorldGenerationData.ChunkSize.z);
+            return new Vector3Int(Mathf.FloorToInt(vec.x / WorldGenerationGlobals.ChunkSize.x) * WorldGenerationGlobals.ChunkSize.x,
+                                  Mathf.FloorToInt(vec.y / WorldGenerationGlobals.ChunkSize.y) * WorldGenerationGlobals.ChunkSize.y,
+                                  Mathf.FloorToInt(vec.z / WorldGenerationGlobals.ChunkSize.z) * WorldGenerationGlobals.ChunkSize.z);
         }
 
         /// <summary>
@@ -29,9 +29,9 @@ namespace WorldGeneration
         /// <returns>The world postion of the chunk that contains the input vector</returns>
         public static Vector3Int RoundToChunkPos(this Vector3 vec)
         {
-            return new Vector3Int(Mathf.FloorToInt(vec.x / WorldGenerationData.ChunkSize.x) * WorldGenerationData.ChunkSize.x,
-                                  Mathf.FloorToInt(vec.y / WorldGenerationData.ChunkSize.y) * WorldGenerationData.ChunkSize.y,
-                                  Mathf.FloorToInt(vec.z / WorldGenerationData.ChunkSize.z) * WorldGenerationData.ChunkSize.z);
+            return new Vector3Int(Mathf.FloorToInt(vec.x / WorldGenerationGlobals.ChunkSize.x) * WorldGenerationGlobals.ChunkSize.x,
+                                  Mathf.FloorToInt(vec.y / WorldGenerationGlobals.ChunkSize.y) * WorldGenerationGlobals.ChunkSize.y,
+                                  Mathf.FloorToInt(vec.z / WorldGenerationGlobals.ChunkSize.z) * WorldGenerationGlobals.ChunkSize.z);
         }
 
         /// <summary>
@@ -41,9 +41,9 @@ namespace WorldGeneration
         /// <returns>The block position within a chunk pointed to by vec</returns>
         public static Vector3Int WorldPosToBlockIndex(this Vector3Int vec)
         {
-            return new Vector3Int(((vec.x % WorldGenerationData.ChunkSize.x) + WorldGenerationData.ChunkSize.x) % WorldGenerationData.ChunkSize.x,
-                ((vec.y % WorldGenerationData.ChunkSize.y) + WorldGenerationData.ChunkSize.y) % WorldGenerationData.ChunkSize.y,
-                ((vec.z % WorldGenerationData.ChunkSize.z) + WorldGenerationData.ChunkSize.z) % WorldGenerationData.ChunkSize.z);
+            return new Vector3Int(((vec.x % WorldGenerationGlobals.ChunkSize.x) + WorldGenerationGlobals.ChunkSize.x) % WorldGenerationGlobals.ChunkSize.x,
+                ((vec.y % WorldGenerationGlobals.ChunkSize.y) + WorldGenerationGlobals.ChunkSize.y) % WorldGenerationGlobals.ChunkSize.y,
+                ((vec.z % WorldGenerationGlobals.ChunkSize.z) + WorldGenerationGlobals.ChunkSize.z) % WorldGenerationGlobals.ChunkSize.z);
         }
 
         /// <summary>
@@ -53,9 +53,9 @@ namespace WorldGeneration
         /// <returns>The world position of the chunk that is referred to by vec</returns>
         public static Vector3Int ChunkIndexToWorldPos(this Vector3Int vec)
         {
-            return new Vector3Int(vec.x * WorldGenerationData.ChunkSize.x,
-                                  vec.y * WorldGenerationData.ChunkSize.y,
-                                  vec.z * WorldGenerationData.ChunkSize.z);
+            return new Vector3Int(vec.x * WorldGenerationGlobals.ChunkSize.x,
+                                  vec.y * WorldGenerationGlobals.ChunkSize.y,
+                                  vec.z * WorldGenerationGlobals.ChunkSize.z);
         }
 
         /// <summary>
@@ -65,9 +65,9 @@ namespace WorldGeneration
         /// <returns>The chunk-index of the chunk that is at the world-space location of vec</returns>
         public static Vector3Int WorldPosToChunkIndex(this Vector3Int vec)
         {
-            return new Vector3Int(Mathf.FloorToInt((float)vec.x / WorldGenerationData.ChunkSize.x),
-                                  Mathf.FloorToInt((float)vec.y / WorldGenerationData.ChunkSize.y),
-                                  Mathf.FloorToInt((float)vec.z / WorldGenerationData.ChunkSize.z));
+            return new Vector3Int(Mathf.FloorToInt((float)vec.x / WorldGenerationGlobals.ChunkSize.x),
+                                  Mathf.FloorToInt((float)vec.y / WorldGenerationGlobals.ChunkSize.y),
+                                  Mathf.FloorToInt((float)vec.z / WorldGenerationGlobals.ChunkSize.z));
         }
 
         /// <summary>
@@ -77,9 +77,9 @@ namespace WorldGeneration
         /// <returns>The chunk-index of the chunk that is at the world-space location of vec</returns>
         public static Vector3Int WorldPosToChunkIndex(this Vector3 vec)
         {
-            return new Vector3Int(Mathf.FloorToInt(vec.x / WorldGenerationData.ChunkSize.x),
-                                  Mathf.FloorToInt(vec.y / WorldGenerationData.ChunkSize.y),
-                                  Mathf.FloorToInt(vec.z / WorldGenerationData.ChunkSize.z));
+            return new Vector3Int(Mathf.FloorToInt(vec.x / WorldGenerationGlobals.ChunkSize.x),
+                                  Mathf.FloorToInt(vec.y / WorldGenerationGlobals.ChunkSize.y),
+                                  Mathf.FloorToInt(vec.z / WorldGenerationGlobals.ChunkSize.z));
         }
 
         /// <summary>
@@ -103,7 +103,7 @@ namespace WorldGeneration
         /// <returns>The value at x, y, z</returns>
         public static T GetAsChunk<T>(this NativeArray<T> arr, int x, int y, int z) where T : struct
         {
-            return arr[(1 + x) + ((1 + y) * (WorldGenerationData.ChunkSize.x + 2)) + ((1 + z) * (((WorldGenerationData.ChunkSize.x) + 2) * ((WorldGenerationData.ChunkSize.y) + 2)))];
+            return arr[(1 + x) + ((1 + y) * (WorldGenerationGlobals.ChunkSize.x + 2)) + ((1 + z) * (((WorldGenerationGlobals.ChunkSize.x) + 2) * ((WorldGenerationGlobals.ChunkSize.y) + 2)))];
         }
 
         /// <summary>
@@ -117,7 +117,7 @@ namespace WorldGeneration
         /// <param name="value"></param>
         public static void SetAsChunk<T>(this NativeArray<T> arr, int x, int y, int z, T value) where T : struct
         {
-            arr[(1 + x) + ((1 + y) * (WorldGenerationData.ChunkSize.x + 2)) + ((1 + z) * (((WorldGenerationData.ChunkSize.x) + 2) * ((WorldGenerationData.ChunkSize.y) + 2)))] = value;
+            arr[(1 + x) + ((1 + y) * (WorldGenerationGlobals.ChunkSize.x + 2)) + ((1 + z) * (((WorldGenerationGlobals.ChunkSize.x) + 2) * ((WorldGenerationGlobals.ChunkSize.y) + 2)))] = value;
         }
 
         /// <summary>

@@ -81,18 +81,18 @@ namespace WorldGeneration
             dispatchArgs = new int[3];
             uint[] temp = new uint[3];
             computeShader.GetKernelThreadGroupSizes(0, out temp[0], out temp[1], out temp[2]);
-            dispatchArgs[0] = (WorldGenerationData.ChunkSize.x / (int)temp[0]);
-            dispatchArgs[1] = (WorldGenerationData.ChunkSize.y / (int)temp[1]);
-            dispatchArgs[2] = (WorldGenerationData.ChunkSize.z / (int)temp[2]);
+            dispatchArgs[0] = (WorldGenerationGlobals.ChunkSize.x / (int)temp[0]);
+            dispatchArgs[1] = (WorldGenerationGlobals.ChunkSize.y / (int)temp[1]);
+            dispatchArgs[2] = (WorldGenerationGlobals.ChunkSize.z / (int)temp[2]);
 
-            Verticies = new NativeArray<VertexBufferStruct>(VoxelGenerationData.MaxPossibleVerticies, Allocator.Persistent);
-            Quads = new NativeArray<int>(VoxelGenerationData.MaxPossibleVerticies, Allocator.Persistent);
+            Verticies = new NativeArray<VertexBufferStruct>(WorldGenerationGlobals.MaxPossibleVerticies, Allocator.Persistent);
+            Quads = new NativeArray<int>(WorldGenerationGlobals.MaxPossibleVerticies, Allocator.Persistent);
             BufferCounts = new NativeArray<int>(2, Allocator.Persistent);
 
-            vertexbuffer = new ComputeBuffer(VoxelGenerationData.MaxPossibleVerticies / 4, 128, ComputeBufferType.Counter | ComputeBufferType.Structured);
-            quadbuffer = new ComputeBuffer(VoxelGenerationData.MaxPossibleVerticies / 4, 16, ComputeBufferType.Counter | ComputeBufferType.Structured);
+            vertexbuffer = new ComputeBuffer(WorldGenerationGlobals.MaxPossibleVerticies / 4, 128, ComputeBufferType.Counter | ComputeBufferType.Structured);
+            quadbuffer = new ComputeBuffer(WorldGenerationGlobals.MaxPossibleVerticies / 4, 16, ComputeBufferType.Counter | ComputeBufferType.Structured);
             bufferlengthsbuffer = new ComputeBuffer(2, 4);
-            blockmapbuffer = new ComputeBuffer(ModelGenerationData.BlockMapLength, 4, ComputeBufferType.Default);
+            blockmapbuffer = new ComputeBuffer(WorldGenerationGlobals.BlockMapLength, 4, ComputeBufferType.Default);
 
             computeShader.SetBuffer(0, "VertexResult", vertexbuffer);
             computeShader.SetBuffer(0, "QuadResult", quadbuffer);
@@ -153,7 +153,7 @@ namespace WorldGeneration
         private void applyUpdatedMesh(Mesh mesh)
         {
             mesh.Clear();
-            mesh.SetVertexBufferParams(BufferCounts[0], VoxelGenerationData.VertexBufferLayout);
+            mesh.SetVertexBufferParams(BufferCounts[0], WorldGenerationGlobals.VertexBufferLayout);
             mesh.SetIndexBufferParams(BufferCounts[1], IndexFormat.UInt32);
             mesh.SetVertexBufferData(Verticies, 0, 0, BufferCounts[0], flags: (MeshUpdateFlags)15);
             mesh.SetIndexBufferData(Quads, 0, 0, BufferCounts[1], flags: (MeshUpdateFlags)15);

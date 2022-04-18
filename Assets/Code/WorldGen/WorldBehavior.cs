@@ -56,9 +56,9 @@ public class WorldBehavior : MonoBehaviour
 
     public void InstantiateSurroundingChunks(Vector3Int pos)
     {
-        for(int i = 0; i < WorldGenerationData.Directions.Length; i++)
+        for(int i = 0; i < WorldGenerationGlobals.Directions.Length; i++)
         {
-            Vector3Int target = pos + (WorldGenerationData.Directions[i] * WorldGenerationData.ChunkSize[i / 2]);
+            Vector3Int target = pos + (WorldGenerationGlobals.Directions[i] * WorldGenerationGlobals.ChunkSize[i / 2]);
             if (!activeChunks.ContainsKey(target))
             {
                 InstantiateChunk(target);

@@ -60,10 +60,10 @@ public class ChunkBehavior : MonoBehaviour
         for (int i = 0; i < verts.Length; i++)  // make mesh appear to be a large cube
         {
             verts[i] += Vector3.one / 2;
-            verts[i] = Vector3.Scale(verts[i], WorldGenerationData.ChunkSize);
+            verts[i] = Vector3.Scale(verts[i], WorldGenerationGlobals.ChunkSize);
         }
         meshFilter.mesh.vertices = verts;
-        bounds = new BoundsInt(transform.position.ToVector3Int(), WorldGenerationData.ChunkSize);
+        bounds = new BoundsInt(transform.position.ToVector3Int(), WorldGenerationGlobals.ChunkSize);
         meshFilter.mesh.bounds = new Bounds(bounds.size / 2, bounds.size);
 
         state = SpawnedState.Initialized;
