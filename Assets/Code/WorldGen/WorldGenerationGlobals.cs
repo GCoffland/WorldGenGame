@@ -7,6 +7,7 @@ using System.Runtime;
 using System.Linq;
 using Unity.Collections;
 using UnityEngine.Experimental.Rendering;
+using System.Threading.Tasks.Dataflow;
 
 namespace WorldGeneration
 {
@@ -32,7 +33,6 @@ namespace WorldGeneration
     [GenerateHLSL(PackingRules.Exact, false)]
     public static class WorldGenerationGlobals
     {
-
         public const string blockTexturePath = "VoxelTextures/";
 
         public static readonly Texture2D atlas;
