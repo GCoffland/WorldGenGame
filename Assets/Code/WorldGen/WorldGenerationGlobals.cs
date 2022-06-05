@@ -36,10 +36,18 @@ namespace WorldGeneration
         public const string blockTexturePath = "VoxelTextures/";
 
         public static readonly Texture2D atlas;
+        public static readonly Dictionary<int, RuntimeBlockData> blockData = new Dictionary<int, RuntimeBlockData>();
+        public static readonly Dictionary<string, int> blockIdByName = new Dictionary<string, int>();
 
         static WorldGenerationGlobals()
         {
-            Cubemap[] maps = Resources.LoadAll<Cubemap>(blockTexturePath);
+            BlockData[] data = Resources.LoadAll<BlockData>(blockTexturePath);
+
+            Cubemap[] maps = new Cubemap[data.Length];
+            for(int i = 0; i < data.Length; i++)
+            {
+                maps[i] = data[i].Cubemap;
+            }
 
             int width = 0;
             int height = 0;
@@ -50,9 +58,26 @@ namespace WorldGeneration
             }
 
             atlas = new Texture2D(width, height, DefaultFormat.LDR, TextureCreationFlags.None);
-            atlas.PackCubemaps(maps);
+            RectInt[][] rects = atlas.PackCubemaps(maps);
+
+            for(int i = 0; i < data.Length; i++)
+            {
+                RuntimeBlockData temp = new RuntimeBlockData()
+                {
+                    blockData = data[i],
+                    atlasRect = rects[i],
+                };
+                blockData.Add(data[i].Id, temp);
+                blockIdByName.Add(data[i].Name, data[i].Id);
+            }
 
             Debug.Log("Initialized constants");
+        }
+
+        public struct RuntimeBlockData
+        {
+            public BlockData blockData;
+            public RectInt[] atlasRect;
         }
 
         public const float MaxRenderDistance = 100f;
@@ -101,4 +126,3 @@ namespace WorldGeneration
         }
     }
 }
-

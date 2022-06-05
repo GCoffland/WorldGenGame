@@ -126,20 +126,21 @@ namespace WorldGeneration
         /// <param name=""></param>
         /// <param name="to_pack"></param>
         /// <returns></returns>
-        public static RectInt[] PackCubemaps(this Texture2D tex, Cubemap[] to_pack)
+        public static RectInt[][] PackCubemaps(this Texture2D tex, Cubemap[] to_pack)
         {
-            RectInt[] rects = new RectInt[to_pack.Length];
+            RectInt[][] rects = new RectInt[to_pack.Length][];
             Vector2Int current_pos = Vector2Int.zero;
             for (int i = 0; i < to_pack.Length; i++)
             {
-                rects[i] = new RectInt(current_pos, new Vector2Int(to_pack[i].width, to_pack[i].height));
+                rects[i] = new RectInt[6];
                 for (int j = 0; j < 6; j++)
                 {
+                    rects[i][j] = new RectInt(current_pos + (j * Vector2Int.up * to_pack[i].height), new Vector2Int(to_pack[i].width, to_pack[i].height));
                     Color[] pixels = to_pack[i].GetPixels((CubemapFace)j);
-                    pixels.ReverseInGroups(rects[i].size.x);
-                    tex.SetPixels(rects[i].position.x, rects[i].size.x * j, rects[i].size.x, rects[i].size.x, pixels);
+                    pixels.ReverseInGroups(rects[i][j].size.x);
+                    tex.SetPixels(rects[i][j].position.x, rects[i][j].position.y, rects[i][j].size.x, rects[i][j].size.x, pixels);
                 }
-                current_pos += new Vector2Int(rects[i].size.x, 0);
+                current_pos += new Vector2Int(rects[i][0].size.x, 0);
             }
             tex.Apply();
             return rects;
