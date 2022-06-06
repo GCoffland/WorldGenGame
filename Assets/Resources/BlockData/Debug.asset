@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 81470d482cfecc04ba722ab344bf387d, type: 3}
   m_Name: Debug
   m_EditorClassIdentifier: 
-  Id: -1
+  Id: 1
   Name: Debug
   Description: 
-  Cubemap: {fileID: 8900000, guid: 685a31dc966dfef4390ff744af2ad34c, type: 3}
+  Cubemap: {fileID: 8900000, guid: 75b6f53d57a399c4ea06f34d8a3ceb8d, type: 3}

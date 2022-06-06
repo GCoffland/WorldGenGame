@@ -2,8 +2,8 @@
 // This file was automatically generated. Please don't edit by hand. Execute Editor command [ Edit > Rendering > Generate Shader Includes ] instead
 //
 
-#ifndef WORLDGENERATION_CS_HLSL
-#define WORLDGENERATION_CS_HLSL
+#ifndef WORLDGENERATIONGLOBALS_CS_HLSL
+#define WORLDGENERATIONGLOBALS_CS_HLSL
 //
 // WorldGeneration.DIRECTION:  static fields
 //
@@ -15,21 +15,8 @@
 #define DIRECTION_Z_POS (5)
 
 //
-// WorldGeneration.VOXELTYPE:  static fields
+// WorldGeneration.WorldGenerationGlobals:  static fields
 //
-#define VOXELTYPE_NONE (0)
-#define VOXELTYPE_DIRT (1)
-#define VOXELTYPE_GRASS (2)
-
-//
-// WorldGeneration.Constant:  static fields
-//
-#define NUM (5)
-
-//
-// WorldGeneration.Constants:  static fields
-//
-#define TNF (0.25)
 #define MAX_RENDER_DISTANCE (100)
 #define MAX_ACTIVE_CHUNK_COUNT (1000)
 

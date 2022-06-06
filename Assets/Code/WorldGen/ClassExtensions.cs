@@ -120,32 +120,6 @@ namespace WorldGeneration
             arr[(1 + x) + ((1 + y) * (WorldGenerationGlobals.ChunkSize.x + 2)) + ((1 + z) * (((WorldGenerationGlobals.ChunkSize.x) + 2) * ((WorldGenerationGlobals.ChunkSize.y) + 2)))] = value;
         }
 
-        /// <summary>
-        /// Pack an array of Cubemaps into a Texture2D
-        /// </summary>
-        /// <param name=""></param>
-        /// <param name="to_pack"></param>
-        /// <returns></returns>
-        public static RectInt[][] PackCubemaps(this Texture2D tex, Cubemap[] to_pack)
-        {
-            RectInt[][] rects = new RectInt[to_pack.Length][];
-            Vector2Int current_pos = Vector2Int.zero;
-            for (int i = 0; i < to_pack.Length; i++)
-            {
-                rects[i] = new RectInt[6];
-                for (int j = 0; j < 6; j++)
-                {
-                    rects[i][j] = new RectInt(current_pos + (j * Vector2Int.up * to_pack[i].height), new Vector2Int(to_pack[i].width, to_pack[i].height));
-                    Color[] pixels = to_pack[i].GetPixels((CubemapFace)j);
-                    pixels.ReverseInGroups(rects[i][j].size.x);
-                    tex.SetPixels(rects[i][j].position.x, rects[i][j].position.y, rects[i][j].size.x, rects[i][j].size.x, pixels);
-                }
-                current_pos += new Vector2Int(rects[i][0].size.x, 0);
-            }
-            tex.Apply();
-            return rects;
-        }
-
         public static void ReverseInGroups<T>(this T[] arr, int group_size)
         {
             if (arr.Length % group_size != 0)

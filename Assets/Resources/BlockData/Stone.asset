@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 81470d482cfecc04ba722ab344bf387d, type: 3}
   m_Name: Stone
   m_EditorClassIdentifier: 
-  Id: 2
+  Id: 4
   Name: Stone
   Description: 
-  Cubemap: {fileID: 8900000, guid: 13e54479e2f271b4cb7b66c40495116d, type: 3}
+  Cubemap: {fileID: 8900000, guid: 6552e075f0ce3da4b9c84972c7a3a350, type: 3}

@@ -33,9 +33,10 @@ namespace WorldGeneration
     [GenerateHLSL(PackingRules.Exact, false)]
     public static class WorldGenerationGlobals
     {
-        public const string blockTexturePath = "VoxelTextures/";
+        public const string blockTexturePath = "BlockData/";
 
         public static readonly Texture2D atlas;
+        public static readonly Vector2 TNF;
         public static readonly Dictionary<int, RuntimeBlockData> blockData = new Dictionary<int, RuntimeBlockData>();
         public static readonly Dictionary<string, int> blockIdByName = new Dictionary<string, int>();
 
@@ -43,10 +44,13 @@ namespace WorldGeneration
         {
             BlockData[] data = Resources.LoadAll<BlockData>(blockTexturePath);
 
-            Cubemap[] maps = new Cubemap[data.Length];
+            List<Cubemap> maps = new List<Cubemap>();
             for(int i = 0; i < data.Length; i++)
             {
-                maps[i] = data[i].Cubemap;
+                if(data[i].Cubemap != null)
+                {
+                    maps.Add(data[i].Cubemap);
+                }
             }
 
             int width = 0;
@@ -58,26 +62,57 @@ namespace WorldGeneration
             }
 
             atlas = new Texture2D(width, height, DefaultFormat.LDR, TextureCreationFlags.None);
-            RectInt[][] rects = atlas.PackCubemaps(maps);
+            Rect[][] rects = PackCubemaps(atlas, maps.ToArray());
 
+            int k = 0;
             for(int i = 0; i < data.Length; i++)
             {
                 RuntimeBlockData temp = new RuntimeBlockData()
                 {
-                    blockData = data[i],
-                    atlasRect = rects[i],
+                    blockData = data[i]
                 };
+                if (data[i].Cubemap != null)
+                {
+                    temp.atlasRect = rects[k++];
+                }
                 blockData.Add(data[i].Id, temp);
                 blockIdByName.Add(data[i].Name, data[i].Id);
             }
 
+            TNF = new Vector2(1f / maps.Count, 1f / 6f);
+
             Debug.Log("Initialized constants");
+        }
+
+        private static Rect[][] PackCubemaps(Texture2D tex, Cubemap[] to_pack)
+        {
+            Rect[][] rects = new Rect[to_pack.Length][];
+            Vector2 current_pos = Vector2.zero;
+            for (int i = 0; i < to_pack.Length; i++)
+            {
+                rects[i] = new Rect[6];
+                for (int j = 0; j < 6; j++)
+                {
+                    rects[i][j] = new Rect(current_pos + (j * Vector2Int.up * to_pack[i].height) * tex.texelSize,
+                        new Vector2Int(to_pack[i].width, to_pack[i].height) * tex.texelSize);
+                    Color[] pixels = to_pack[i].GetPixels((CubemapFace)j);
+                    pixels.ReverseInGroups(to_pack[i].width);
+                    tex.SetPixels((int)(rects[i][j].position.x / tex.texelSize.x),
+                        (int)(rects[i][j].position.y / tex.texelSize.y),
+                        (int)(rects[i][j].size.x / tex.texelSize.x),
+                        (int)(rects[i][j].size.y / tex.texelSize.y),
+                        pixels);
+                }
+                current_pos += new Vector2(rects[i][0].size.x, 0);
+            }
+            tex.Apply();
+            return rects;
         }
 
         public struct RuntimeBlockData
         {
             public BlockData blockData;
-            public RectInt[] atlasRect;
+            public Rect[] atlasRect;
         }
 
         public const float MaxRenderDistance = 100f;

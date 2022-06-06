@@ -46,6 +46,7 @@ public class ChunkBehavior : MonoBehaviour
     };
 
     private MeshFilter meshFilter;
+    private MeshRenderer meshRenderer;
     private MeshCollider meshCollider;
     private SpawnedState _state;
 
@@ -54,6 +55,7 @@ public class ChunkBehavior : MonoBehaviour
     void Awake()
     {
         meshFilter = GetComponent<MeshFilter>();        // assign fields
+        meshRenderer = GetComponent<MeshRenderer>();
         meshCollider = GetComponent<MeshCollider>();
 
         Vector3[] verts = meshFilter.mesh.vertices;
@@ -65,6 +67,8 @@ public class ChunkBehavior : MonoBehaviour
         meshFilter.mesh.vertices = verts;
         bounds = new BoundsInt(transform.position.ToVector3Int(), WorldGenerationGlobals.ChunkSize);
         meshFilter.mesh.bounds = new Bounds(bounds.size / 2, bounds.size);
+
+        meshRenderer.material.mainTexture = WorldGenerationGlobals.atlas;
 
         state = SpawnedState.Initialized;
     }

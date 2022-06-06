@@ -6,6 +6,7 @@ using Unity.Collections;
 using UnityEngine.Rendering;
 using WorldGeneration;
 using System.Threading.Tasks;
+using System.Linq;
 
 
 namespace WorldGeneration
@@ -22,6 +23,8 @@ namespace WorldGeneration
         private NativeArray<int> Quads;
         private NativeArray<int> BufferCounts;      //[0] is Verticies count, [1] is Quads count
 
+        ComputeBuffer blockUVsbuffer;
+
         ComputeBuffer vertexbuffer;
         ComputeBuffer quadbuffer;
         ComputeBuffer blockmapbuffer;
@@ -30,6 +33,10 @@ namespace WorldGeneration
         private void Awake()
         {
             Singleton = this;
+        }
+
+        private void Start()
+        {
             Init();
             state = GeneratorState.Ready;
         }
@@ -85,6 +92,20 @@ namespace WorldGeneration
             dispatchArgs[1] = (WorldGenerationGlobals.ChunkSize.y / (int)temp[1]);
             dispatchArgs[2] = (WorldGenerationGlobals.ChunkSize.z / (int)temp[2]);
 
+            var blockRects = WorldGenerationGlobals.blockData.ToArray();
+            int maxBlockIndex = blockRects.Max((x) => { return x.Key; });
+            NativeArray<Vector2> blockUVs = new NativeArray<Vector2>((maxBlockIndex + 1) * 6, Allocator.Persistent);
+            for(int i = 0; i < blockRects.Length; i++)
+            {
+                if (blockRects[i].Value.blockData.Cubemap != null)
+                {
+                    for(int j = 0; j < 6; j++)
+                    {
+                        blockUVs[blockRects[i].Key * 6 + j] = blockRects[i].Value.atlasRect[5 - j].min;
+                    }
+                }
+            }
+            
             Verticies = new NativeArray<VertexBufferStruct>(WorldGenerationGlobals.MaxPossibleVerticies, Allocator.Persistent);
             Quads = new NativeArray<int>(WorldGenerationGlobals.MaxPossibleVerticies, Allocator.Persistent);
             BufferCounts = new NativeArray<int>(2, Allocator.Persistent);
@@ -93,11 +114,17 @@ namespace WorldGeneration
             quadbuffer = new ComputeBuffer(WorldGenerationGlobals.MaxPossibleVerticies / 4, 16, ComputeBufferType.Counter | ComputeBufferType.Structured);
             bufferlengthsbuffer = new ComputeBuffer(2, 4);
             blockmapbuffer = new ComputeBuffer(WorldGenerationGlobals.BlockMapLength, 4, ComputeBufferType.Default);
+            blockUVsbuffer = new ComputeBuffer(blockUVs.Length, 8, ComputeBufferType.Default);
 
             computeShader.SetBuffer(0, "VertexResult", vertexbuffer);
             computeShader.SetBuffer(0, "QuadResult", quadbuffer);
             computeShader.SetBuffer(0, "BufferLengths", bufferlengthsbuffer);
             computeShader.SetBuffer(0, "BlockMap", blockmapbuffer);
+            computeShader.SetBuffer(0, "BlockUVs", blockUVsbuffer);
+            computeShader.SetVector("TNF", WorldGenerationGlobals.TNF);
+            blockUVsbuffer.SetData(blockUVs);
+
+            if (blockUVs.IsCreated) blockUVs.Dispose();
         }
 
         private void ResetCounters()
@@ -170,6 +197,7 @@ namespace WorldGeneration
             quadbuffer?.Release();
             blockmapbuffer?.Release();
             bufferlengthsbuffer?.Release();
+            blockUVsbuffer?.Release();
         }
     }
 }
