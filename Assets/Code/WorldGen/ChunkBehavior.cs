@@ -105,8 +105,10 @@ public class ChunkBehavior : MonoBehaviour
 
     private async Task GenerateMesh()
     {
-        await MeshGenerator.GenerateMeshData(blockMap, meshFilter.mesh);
-        meshCollider.sharedMesh = meshFilter.sharedMesh;
+        Mesh mesh = await MeshGenerator.GenerateMeshData(blockMap);
+        meshFilter.mesh.Clear();
+        meshFilter.mesh = mesh;
+        meshCollider.sharedMesh = mesh;
         meshRenderer.material.mainTexture = WorldGenerationGlobals.atlas;
     }
 

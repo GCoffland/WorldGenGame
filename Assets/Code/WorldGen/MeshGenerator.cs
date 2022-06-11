@@ -30,23 +30,6 @@ namespace WorldGeneration
         ComputeBuffer blockmapbuffer;
         ComputeBuffer bufferlengthsbuffer;
 
-        private void Awake()
-        {
-            Singleton = this;
-        }
-
-        private void Start()
-        {
-            Init();
-            state = GeneratorState.Ready;
-        }
-
-        private void OnDestroy()
-        {
-            AsyncGPUReadback.WaitAllRequests();
-            ReleaseResources();
-        }
-
         public enum GeneratorState
         {
             Uninitialized,
@@ -63,7 +46,7 @@ namespace WorldGeneration
 
         Queue<int> requests = new Queue<int>();
 
-        public static async Task GenerateMeshData(NativeArray<uint> blockmap, Mesh mesh)
+        public static async Task<Mesh> GenerateMeshData(NativeArray<uint> blockmap)
         {
             int id = Interlocked.Increment(ref Singleton.taskID);
             Singleton.requests.Enqueue(id);
@@ -75,12 +58,29 @@ namespace WorldGeneration
             Singleton.state = GeneratorState.Busy;
 
             Singleton.SetDataAndDispatch(blockmap);
-            List<AsyncGPUReadbackRequest> reqs = Singleton.QueueRequestData();
-            await Singleton.WaitForRequests(reqs);
-            Singleton.applyUpdatedMesh(mesh);
+            await Singleton.AsyncWaitForData();
+            Mesh mesh = Singleton.CreateMeshFromCurrentData();
 
             Singleton.state = GeneratorState.Ready;
             Singleton.requests.Dequeue();
+            return mesh;
+        }
+
+        private void Awake()
+        {
+            Singleton = this;
+        }
+
+        private void Start()
+        {
+            Init();
+            state = GeneratorState.Ready;
+        }
+
+        private void OnDestroy()
+        {
+            AsyncGPUReadback.WaitAllRequests();
+            ReleaseResources();
         }
 
         private void Init()
@@ -144,41 +144,31 @@ namespace WorldGeneration
             computeShader.Dispatch(0, dispatchArgs[0], dispatchArgs[1], dispatchArgs[2]);
         }
 
-        private List<AsyncGPUReadbackRequest> QueueRequestData()
+        SemaphoreSlim dataRetrievalSem = new SemaphoreSlim(0, 3);
+
+        private async Task AsyncWaitForData()
         {
-            List<AsyncGPUReadbackRequest> rets = new List<AsyncGPUReadbackRequest>();
-
-            rets.Add(AsyncGPUReadback.RequestIntoNativeArray<VertexBufferStruct>(ref Verticies, vertexbuffer));
-            rets.Add(AsyncGPUReadback.RequestIntoNativeArray<int>(ref Quads, quadbuffer));
-            rets.Add(AsyncGPUReadback.RequestIntoNativeArray<int>(ref BufferCounts, bufferlengthsbuffer));
-
-            return rets;
-        }
-
-        private async Task WaitForRequests(IList<AsyncGPUReadbackRequest> reqs)
-        {
-            bool reqs_pending = true;
-            while (reqs_pending)
+            AsyncGPUReadback.RequestIntoNativeArray<VertexBufferStruct>(ref Verticies, vertexbuffer, (x) =>
+                {
+                    dataRetrievalSem.Release(1);
+                });
+            AsyncGPUReadback.RequestIntoNativeArray<int>(ref Quads, quadbuffer, (x) =>
+                {
+                    dataRetrievalSem.Release(1);
+                });
+            AsyncGPUReadback.RequestIntoNativeArray<int>(ref BufferCounts, bufferlengthsbuffer, (x) =>
+                {
+                    dataRetrievalSem.Release(1);
+                });
+            for(int i = 0; i < 3; i++)
             {
-                reqs_pending = false;
-                foreach (AsyncGPUReadbackRequest req in reqs)
-                {
-                    if (!req.done)
-                    {
-                        reqs_pending = true;
-                    }
-                }
-                if (reqs_pending)
-                {
-                    await Task.Yield();
-                }
+                await dataRetrievalSem.WaitAsync();
             }
-            //Debug.Log("Verticies Used: " + BufferCounts[0] + "/" + BufferElementCapacity);
-            //Debug.Log("Quads Used: " + BufferCounts[1] + "/" + BufferElementCapacity);
         }
 
-        private void applyUpdatedMesh(Mesh mesh)
+        private Mesh CreateMeshFromCurrentData()
         {
+            Mesh mesh = new Mesh();
             mesh.Clear();
             mesh.SetVertexBufferParams(BufferCounts[0], WorldGenerationGlobals.VertexBufferLayout);
             mesh.SetIndexBufferParams(BufferCounts[1], IndexFormat.UInt32);
@@ -186,6 +176,8 @@ namespace WorldGeneration
             mesh.SetIndexBufferData(Quads, 0, 0, BufferCounts[1], flags: (MeshUpdateFlags)15);
             mesh.SetSubMesh(0, new SubMeshDescriptor(0, BufferCounts[1], MeshTopology.Quads));
             mesh.RecalculateBounds();
+            //Physics.BakeMesh(mesh.GetInstanceID(), true);      // can be called manually and multithreaded
+            return mesh;
         }
 
         private void ReleaseResources()
