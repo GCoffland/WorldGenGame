@@ -45,19 +45,33 @@ public class ChunkBehavior : MonoBehaviour
         Spawned
     };
 
+    [SerializeField]
     private MeshFilter meshFilter;
+    [SerializeField]
     private MeshRenderer meshRenderer;
+    [SerializeField]
     private MeshCollider meshCollider;
+    [SerializeField]
+    private Mesh defaultMesh;
     private SpawnedState _state;
 
     NativeArray<uint> blockMap;
 
     void Awake()
     {
-        meshFilter = GetComponent<MeshFilter>();        // assign fields
-        meshRenderer = GetComponent<MeshRenderer>();
-        meshCollider = GetComponent<MeshCollider>();
+        SetDefaultMesh();
 
+        state = SpawnedState.Initialized;
+    }
+
+    private void OnDestroy()
+    {
+        if (blockMap.IsCreated) blockMap.Dispose();
+    }
+
+    private void SetDefaultMesh()
+    {
+        meshFilter.mesh = defaultMesh;
         Vector3[] verts = meshFilter.mesh.vertices;
         for (int i = 0; i < verts.Length; i++)  // make mesh appear to be a large cube
         {
@@ -67,15 +81,6 @@ public class ChunkBehavior : MonoBehaviour
         meshFilter.mesh.vertices = verts;
         bounds = new BoundsInt(transform.position.ToVector3Int(), WorldGenerationGlobals.ChunkSize);
         meshFilter.mesh.bounds = new Bounds(bounds.size / 2, bounds.size);
-
-        meshRenderer.material.mainTexture = WorldGenerationGlobals.atlas;
-
-        state = SpawnedState.Initialized;
-    }
-
-    private void OnDestroy()
-    {
-        if (blockMap.IsCreated) blockMap.Dispose();
     }
 
     public async Task Spawn()
@@ -102,6 +107,7 @@ public class ChunkBehavior : MonoBehaviour
     {
         await MeshGenerator.GenerateMeshData(blockMap, meshFilter.mesh);
         meshCollider.sharedMesh = meshFilter.sharedMesh;
+        meshRenderer.material.mainTexture = WorldGenerationGlobals.atlas;
     }
 
     public uint this[int x, int y, int z]
