@@ -7,7 +7,7 @@ using UnityEngine.Rendering;
 using WorldGeneration;
 using System.Threading.Tasks;
 using System.Linq;
-
+using System.Collections.Concurrent;
 
 namespace WorldGeneration
 {
@@ -30,51 +30,24 @@ namespace WorldGeneration
         ComputeBuffer blockmapbuffer;
         ComputeBuffer bufferlengthsbuffer;
 
-        public enum GeneratorState
-        {
-            Uninitialized,
-            Ready,
-            Busy
-        };
-        public GeneratorState state
-        {
-            get;
-            private set;
-        } = GeneratorState.Uninitialized;
+        private SemaphoreSlim queueSem = new SemaphoreSlim(1);
 
-        private int taskID = 0;
-
-        Queue<int> requests = new Queue<int>();
-
-        public static async Task<Mesh> GenerateMeshData(NativeArray<uint> blockmap)
+        public async Task<Mesh> GenerateMeshData(NativeArray<uint> blockmap)
         {
-            int id = Interlocked.Increment(ref Singleton.taskID);
-            Singleton.requests.Enqueue(id);
-            //Debug.Log("Queued Task: " + id);
-            while (Singleton.requests.Peek() != id)
-            {
-                await Task.Yield();
-            }
-            Singleton.state = GeneratorState.Busy;
+            await queueSem.WaitAsync();
 
             Singleton.SetDataAndDispatch(blockmap);
             await Singleton.AsyncWaitForData();
             Mesh mesh = Singleton.CreateMeshFromCurrentData();
 
-            Singleton.state = GeneratorState.Ready;
-            Singleton.requests.Dequeue();
+            queueSem.Release(1);
             return mesh;
         }
 
         private void Awake()
         {
             Singleton = this;
-        }
-
-        private void Start()
-        {
             Init();
-            state = GeneratorState.Ready;
         }
 
         private void OnDestroy()

@@ -100,12 +100,12 @@ public class ChunkBehavior : MonoBehaviour
 
     private async Task GenerateModel()
     {
-        await ChunkModelGenerator.GenerateBlockmap(blockMap, bounds.position);
+        await ModelGenerator.Singleton.GenerateBlockmap(blockMap, bounds);
     }
 
     private async Task GenerateMesh()
     {
-        Mesh mesh = await MeshGenerator.GenerateMeshData(blockMap);
+        Mesh mesh = await MeshGenerator.Singleton.GenerateMeshData(blockMap);
         meshFilter.mesh.Clear();
         meshFilter.mesh = mesh;
         meshCollider.sharedMesh = mesh;
