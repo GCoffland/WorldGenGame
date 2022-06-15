@@ -12,17 +12,6 @@ using System.Threading.Tasks.Dataflow;
 namespace WorldGeneration
 {
     [GenerateHLSL(PackingRules.Exact, false)]
-    public enum DIRECTION
-    {
-        X_NEG,
-        X_POS,
-        Y_NEG,
-        Y_POS,
-        Z_NEG,
-        Z_POS,
-    };
-
-    [GenerateHLSL(PackingRules.Exact, false)]
     public struct VertexBufferStruct
     {
         public Vector3 position;
@@ -126,21 +115,21 @@ namespace WorldGeneration
             new VertexAttributeDescriptor(VertexAttribute.TexCoord0, VertexAttributeFormat.Float32, 2),
         };
 
-        public static readonly Vector3Int[] Directions = new Vector3Int[]
-        {
-            Vector3Int.left,
-            Vector3Int.right,
-            Vector3Int.down,
-            Vector3Int.up,
-            Vector3Int.back,
-            Vector3Int.forward
-        };
-
         public static readonly Vector3Int ChunkSize = new Vector3Int()
         {
             x = 64,
             y = 64,
             z = 64
+        };
+
+        public static int[] ChunkSideAreas = new int[6]
+        {
+            ChunkSize.y * ChunkSize.z,
+            ChunkSize.y * ChunkSize.z,
+            ChunkSize.x * ChunkSize.z,
+            ChunkSize.x * ChunkSize.z,
+            ChunkSize.y * ChunkSize.x,
+            ChunkSize.y * ChunkSize.x,
         };
 
         public static int BlockMapLength
