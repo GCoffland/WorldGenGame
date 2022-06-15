@@ -1,4 +1,5 @@
-﻿#include "WorldGenerationGlobals.cs.hlsl"
+﻿#include "StaticDefinitions.hlsl"
+#include "WorldGenerationGlobals.hlsl"
 
 // Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel CSMain
@@ -6,8 +7,8 @@
 #define THREADS 4
 #define FACES_PER_VOXEL 6
 #define VERTS_PER_FACE 4
-#define VERTBUFFLENGTHINDEX 0
 #define QUADBUFFLENGTHINDEX 1
+#define VERTBUFFLENGTHINDEX 0
 
 
 
