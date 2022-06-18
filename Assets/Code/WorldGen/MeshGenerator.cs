@@ -28,6 +28,7 @@ namespace WorldGeneration
         ComputeBuffer vertexbuffer;
         ComputeBuffer quadbuffer;
         ComputeBuffer blockmapbuffer;
+        ComputeBuffer borderblockmapbuffer;
         ComputeBuffer bufferlengthsbuffer;
 
         private SemaphoreSlim queueSem = new SemaphoreSlim(1);
@@ -87,12 +88,14 @@ namespace WorldGeneration
             quadbuffer = new ComputeBuffer(WorldGenerationGlobals.MaxPossibleVerticies / 4, 16, ComputeBufferType.Counter | ComputeBufferType.Structured);
             bufferlengthsbuffer = new ComputeBuffer(2, 4);
             blockmapbuffer = new ComputeBuffer(WorldGenerationGlobals.BlockMapLength, 4, ComputeBufferType.Default);
+            borderblockmapbuffer = new ComputeBuffer(WorldGenerationGlobals.ChunkSideAreas.Sum(), 4, ComputeBufferType.Default);
             blockUVsbuffer = new ComputeBuffer(blockUVs.Length, 8, ComputeBufferType.Default);
 
             computeShader.SetBuffer(0, "VertexResult", vertexbuffer);
             computeShader.SetBuffer(0, "QuadResult", quadbuffer);
             computeShader.SetBuffer(0, "BufferLengths", bufferlengthsbuffer);
             computeShader.SetBuffer(0, "BlockMap", blockmapbuffer);
+            computeShader.SetBuffer(0, "BorderBlockMap", borderblockmapbuffer);
             computeShader.SetBuffer(0, "BlockUVs", blockUVsbuffer);
             computeShader.SetVector("TNF", WorldGenerationGlobals.TNF);
             blockUVsbuffer.SetData(blockUVs);
@@ -112,6 +115,7 @@ namespace WorldGeneration
             ResetCounters();
 
             blockmapbuffer.SetData(blockmap);
+            //borderblockmapbuffer.SetData(borderblockmap);
             computeShader.SetInts("DispatchArgs", dispatchArgs);
 
             computeShader.Dispatch(0, dispatchArgs[0], dispatchArgs[1], dispatchArgs[2]);
@@ -161,6 +165,7 @@ namespace WorldGeneration
             vertexbuffer?.Release();
             quadbuffer?.Release();
             blockmapbuffer?.Release();
+            borderblockmapbuffer?.Release();
             bufferlengthsbuffer?.Release();
             blockUVsbuffer?.Release();
         }

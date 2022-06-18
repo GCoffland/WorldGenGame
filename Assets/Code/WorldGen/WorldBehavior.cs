@@ -10,7 +10,6 @@ public class WorldBehavior : MonoBehaviour
     public static WorldBehavior Singleton;
     public ChunkBehavior chunkPrefab;
     public GameObject[] players;
-    private Dictionary<Vector3Int, ChunkBehavior> activeChunks = new Dictionary<Vector3Int, ChunkBehavior>();
     
     // Start is called before the first frame update
     private void Start()
@@ -20,10 +19,8 @@ public class WorldBehavior : MonoBehaviour
         for (int i = 0; i < players.Length; i++)
         {
             Vector3Int playerpos = players[i].transform.position.RoundToChunkPos();
-            _ = InstantiateChunk(playerpos).Spawn();
+            _ = SpawnChunk(playerpos);
         }
-
-        ChunkBehavior.onAnyChunkStateChanged += onChunkFinishLoading;
     }
 
     private void Update()
@@ -31,46 +28,18 @@ public class WorldBehavior : MonoBehaviour
         for (int i = 0; i < players.Length; i++)
         {
             Vector3Int playerpos = players[i].transform.position.RoundToChunkPos();
-            ChunkBehavior chunk;
-            if(activeChunks.TryGetValue(playerpos, out chunk))
+            if (!ChunkBehavior.All.ContainsKey(playerpos))
             {
-                if(chunk.state == ChunkBehavior.SpawnedState.Initialized)
-                {
-                    _ = chunk.Spawn();
-                }
-            }
-            else
-            {
-                _ = InstantiateChunk(playerpos).Spawn();
+                _ = SpawnChunk(playerpos);
             }
         }
     }
 
-    private void onChunkFinishLoading(ChunkBehavior cb)
+    public async Task<ChunkBehavior> SpawnChunk(Vector3Int pos)
     {
-        if (cb.state == ChunkBehavior.SpawnedState.Spawned)
-        {
-            InstantiateSurroundingChunks(cb.bounds.position);
-        }
-    }
-
-    public void InstantiateSurroundingChunks(Vector3Int pos)
-    {
-        for(int i = 0; i < WorldGenerationGlobals.Directions.Length; i++)
-        {
-            Vector3Int target = pos + (WorldGenerationGlobals.Directions[i] * WorldGenerationGlobals.ChunkSize[i / 2]);
-            if (!activeChunks.ContainsKey(target))
-            {
-                InstantiateChunk(target);
-            }
-        }
-    }
-
-    public ChunkBehavior InstantiateChunk(Vector3Int pos)
-    {
-        //Debug.Log("Instantaiting Chunk at: " + pos);
         ChunkBehavior ret = Instantiate<ChunkBehavior>(chunkPrefab, pos, Quaternion.identity, transform);
-        activeChunks.Add(pos, ret);
+        await ret.GenerateModel();
+        await ret.GenerateMesh();
         return ret;
     }
 }

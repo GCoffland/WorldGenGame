@@ -35,6 +35,7 @@ uint3 DispatchArgs;
 float2 TNF;
 StructuredBuffer<float2> BlockUVs;
 StructuredBuffer<int> BlockMap;
+StructuredBuffer<int> BorderBlockMap;
 RWStructuredBuffer<QuadVertexBufferStruct> VertexResult;
 RWStructuredBuffer<QuadBufferStruct> QuadResult;
 RWStructuredBuffer<int> BufferLengths;
@@ -60,9 +61,11 @@ int GetBlock(int3 local_pos)
     return BlockMap[index1d];
 }
 
-int GetBlock(float3 pos)
+int GetBorderBlock(int dir_index, uint2 pos)
 {
-    return GetBlock(int3((int)pos[0], (int)pos[1], (int)pos[2]));
+    int index1d = Calc1dID(uint3(pos[0], pos[0], 0));
+    int borderfacebase = dir_index * THREADS * DispatchArgs[0];
+    BorderBlockMap[borderfacebase + index1d];
 }
 
 void DrawFaceQuads(uint starting_vert_index)

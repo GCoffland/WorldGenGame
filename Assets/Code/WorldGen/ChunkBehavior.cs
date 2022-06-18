@@ -8,42 +8,25 @@ using System.Threading.Tasks;
 using WorldGeneration;
 using Unity.Jobs;
 using System;
+using System.Linq;
 
 public class ChunkBehavior : MonoBehaviour
 {
-    public static event Action<ChunkBehavior> onAnyChunkStateChanged;
-    public event Action onChunkStateChanged;
+    public static Dictionary<Vector3Int, ChunkBehavior> All = new Dictionary<Vector3Int, ChunkBehavior>();
 
-    public SpawnedState state
-    {
-        get
-        {
-            return _state;
-        }
-        set
-        {
-            if(value == _state)
-            {
-                return;
-            }
-            _state = value;
-            onAnyChunkStateChanged?.Invoke(this);
-            onChunkStateChanged?.Invoke();
-        }
-    }
-    public BoundsInt bounds
+    public ChunkBehavior[] neighbors = new ChunkBehavior[8];
+
+    public Vector3Int index
     {
         get;
         private set;
     }
 
-    public enum SpawnedState
+    public BoundsInt bounds
     {
-        Uninitialized,
-        Initialized,
-        Spawning,
-        Spawned
-    };
+        get;
+        private set;
+    }
 
     [SerializeField]
     private MeshFilter meshFilter;
@@ -53,20 +36,37 @@ public class ChunkBehavior : MonoBehaviour
     private MeshCollider meshCollider;
     [SerializeField]
     private Mesh defaultMesh;
-    private SpawnedState _state;
 
-    NativeArray<uint> blockMap;
+    private NativeArray<uint> blockMap;
 
     void Awake()
     {
         SetDefaultMesh();
-
-        state = SpawnedState.Initialized;
+        Register();
     }
 
     private void OnDestroy()
     {
         if (blockMap.IsCreated) blockMap.Dispose();
+    }
+
+    private void Register()
+    {
+        index = transform.position.RoundToChunkPos();
+        All.Add(index, this);
+        for(int i = 0; i < StaticDefinitions.Directions.Length; i++)
+        {
+            if(All.TryGetValue(index + StaticDefinitions.Directions[i], out ChunkBehavior other))
+            {
+                neighbors[i] = other;
+                other.neighbors[i + 1 - 2 * (i % 2)] = this;
+            }
+        }
+    }
+
+    private void UnRegister()
+    {
+        throw new NotImplementedException();
     }
 
     private void SetDefaultMesh()
@@ -83,27 +83,13 @@ public class ChunkBehavior : MonoBehaviour
         meshFilter.mesh.bounds = new Bounds(bounds.size / 2, bounds.size);
     }
 
-    public async Task Spawn()
+    public async Task GenerateModel()
     {
-        state = SpawnedState.Spawning;
         blockMap = new NativeArray<uint>((bounds.size.x + 2) * (bounds.size.y + 2) * (bounds.size.z + 2), Allocator.Persistent);
-        meshFilter.sharedMesh = new Mesh();
-        await Generate();
-        state = SpawnedState.Spawned;
-    }
-
-    private async Task Generate()
-    {
-        await GenerateModel();
-        await GenerateMesh();
-    }
-
-    private async Task GenerateModel()
-    {
         await ModelGenerator.Singleton.GenerateBlockmap(blockMap, bounds);
     }
 
-    private async Task GenerateMesh()
+    public async Task GenerateMesh()
     {
         Mesh mesh = await MeshGenerator.Singleton.GenerateMeshData(blockMap);
         meshFilter.mesh.Clear();
