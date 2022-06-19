@@ -85,7 +85,7 @@ public class ChunkBehavior : MonoBehaviour
 
     public async Task GenerateModel()
     {
-        blockMap = new NativeArray<uint>((bounds.size.x + 2) * (bounds.size.y + 2) * (bounds.size.z + 2), Allocator.Persistent);
+        blockMap = new NativeArray<uint>(WorldGenerationGlobals.BlockMapLength, Allocator.Persistent);
         await ModelGenerator.Singleton.GenerateBlockmap(blockMap, bounds);
     }
 
@@ -102,11 +102,11 @@ public class ChunkBehavior : MonoBehaviour
     {
         get
         {
-            return blockMap.GetAsChunk<uint>(x, y, z);
+            return blockMap.GetAsChunk(x, y, z);
         }
         set
         {
-            blockMap.SetAsChunk<uint>(x, y, z, value);
+            blockMap.SetAsChunk(x, y, z, value);
             _ = GenerateMesh();
         }
     }

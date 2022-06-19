@@ -136,7 +136,7 @@ namespace WorldGeneration
         {
             get
             {
-                return (ChunkSize.x + 2) * (ChunkSize.y + 2) * (ChunkSize.z + 2);
+                return ChunkSize.x * ChunkSize.y * ChunkSize.z;
             }
         }
 

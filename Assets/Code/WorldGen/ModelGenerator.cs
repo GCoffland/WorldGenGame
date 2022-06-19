@@ -30,23 +30,19 @@ namespace WorldGeneration
         {
             FastNoiseLite cellular_noise = new FastNoiseLite();
             cellular_noise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
-            for (int x = -1; x < WorldGenerationGlobals.ChunkSize.x + 1; x++)
+            for (int x = 0; x < WorldGenerationGlobals.ChunkSize.x; x++)
             {
-                for (int y = -1; y < WorldGenerationGlobals.ChunkSize.y + 1; y++)
+                for (int y = 0; y < WorldGenerationGlobals.ChunkSize.y; y++)
                 {
-                    for (int z = -1; z < WorldGenerationGlobals.ChunkSize.z + 1; z++)
+                    for (int z = 0; z < WorldGenerationGlobals.ChunkSize.z; z++)
                     {
-                        uint block_type = default;
-                        float noise_val = cellular_noise.GetNoise(x + globalBounds.position.x - 1, y + globalBounds.position.y - 1, z + globalBounds.position.z - 1);
+                        uint block_type = 0;
+                        float noise_val = cellular_noise.GetNoise(x + globalBounds.position.x, y + globalBounds.position.y, z + globalBounds.position.z);
                         if (noise_val < 0.25f)
                         {
                             block_type = 1;
                         }
-                        else
-                        {
-                            block_type = 0;
-                        }
-                        blockMap[(x + 1) + ((y + 1) * (WorldGenerationGlobals.ChunkSize.x + 2)) + ((z + 1) * ((WorldGenerationGlobals.ChunkSize.x + 2) * (WorldGenerationGlobals.ChunkSize.y + 2)))] = block_type;
+                        blockMap.SetAsChunk(x, y, z, block_type);
                     }
                 }
             }

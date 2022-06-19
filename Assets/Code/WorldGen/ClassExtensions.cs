@@ -103,7 +103,7 @@ namespace WorldGeneration
         /// <returns>The value at x, y, z</returns>
         public static T GetAsChunk<T>(this NativeArray<T> arr, int x, int y, int z) where T : struct
         {
-            return arr[(1 + x) + ((1 + y) * (WorldGenerationGlobals.ChunkSize.x + 2)) + ((1 + z) * (((WorldGenerationGlobals.ChunkSize.x) + 2) * ((WorldGenerationGlobals.ChunkSize.y) + 2)))];
+            return arr[x + (y * WorldGenerationGlobals.ChunkSize.x) + (z * WorldGenerationGlobals.ChunkSize.x * WorldGenerationGlobals.ChunkSize.y)];
         }
 
         /// <summary>
@@ -117,7 +117,7 @@ namespace WorldGeneration
         /// <param name="value"></param>
         public static void SetAsChunk<T>(this NativeArray<T> arr, int x, int y, int z, T value) where T : struct
         {
-            arr[(1 + x) + ((1 + y) * (WorldGenerationGlobals.ChunkSize.x + 2)) + ((1 + z) * (((WorldGenerationGlobals.ChunkSize.x) + 2) * ((WorldGenerationGlobals.ChunkSize.y) + 2)))] = value;
+            arr[x + (y * WorldGenerationGlobals.ChunkSize.x) + (z * WorldGenerationGlobals.ChunkSize.x * WorldGenerationGlobals.ChunkSize.y)] = value;
         }
 
         public static void ReverseInGroups<T>(this T[] arr, int group_size)

@@ -77,12 +77,8 @@ int GetBlock(int3 local_pos)
     }
     else
     {
-        int index1d =   (local_pos[0]) +
-                        (local_pos[1] * ((THREADS * DispatchArgs[0]) + 2)) +
-                        (local_pos[2] * (((THREADS * DispatchArgs[0]) + 2) * ((THREADS * DispatchArgs[1]) + 2)));   // properly index into the 1d array of blocks with a 3d indexer
-        index1d +=  (1) +
-                    (1 * ((THREADS * DispatchArgs[0]) + 2)) +
-                    (1 * (((THREADS * DispatchArgs[0]) + 2) * ((THREADS * DispatchArgs[1]) + 2)));  // offset because there is a 1 block buffer all around the BlockMap
+        int index1d = Calc1dID((uint3)local_pos);
+
         return BlockMap[index1d];
     }
 }
