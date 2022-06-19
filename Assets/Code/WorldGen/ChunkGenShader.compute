@@ -85,7 +85,14 @@ int GetBlock(int3 local_pos)
 
 int GetBorderBlock(int dir_index, uint2 pos)
 {
-    int index1d = Calc1dID(uint3(pos[0], pos[0], 0));
+    int index1d;
+    switch (dir_index)
+    {
+        case(DIRECTION_X_NEG):
+            index1d = Calc1dID(uint3(pos[0], pos[0], 0));
+            break;
+    }
+    
     int borderfacebase = dir_index * THREADS * DispatchArgs[0];
     BorderBlockMap[borderfacebase + index1d];
 }
