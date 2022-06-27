@@ -33,11 +33,11 @@ namespace WorldGeneration
 
         private SemaphoreSlim queueSem = new SemaphoreSlim(1);
 
-        public async Task<Mesh> GenerateMeshData(NativeArray<uint> blockmap)
+        public async Task<Mesh> GenerateMeshData(NativeArray<uint> blockmap, NativeArray<uint> borderblockmap)
         {
             await queueSem.WaitAsync();
 
-            Singleton.SetDataAndDispatch(blockmap);
+            Singleton.SetDataAndDispatch(blockmap, borderblockmap);
             await Singleton.AsyncWaitForData();
             Mesh mesh = Singleton.CreateMeshFromCurrentData();
 
@@ -110,12 +110,12 @@ namespace WorldGeneration
             bufferlengthsbuffer.SetData<int>(new List<int>(new int[] { 0, 0 }));
         }
 
-        private void SetDataAndDispatch(in NativeArray<uint> blockmap)
+        private void SetDataAndDispatch(in NativeArray<uint> blockmap, in NativeArray<uint> borderblockmap)
         {
             ResetCounters();
 
             blockmapbuffer.SetData(blockmap);
-            //borderblockmapbuffer.SetData(borderblockmap);
+            borderblockmapbuffer.SetData(borderblockmap);
             computeShader.SetInts("DispatchArgs", dispatchArgs);
 
             computeShader.Dispatch(0, dispatchArgs[0], dispatchArgs[1], dispatchArgs[2]);

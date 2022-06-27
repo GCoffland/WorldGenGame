@@ -4,7 +4,7 @@
 // Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel CSMain
 
-#define THREADS 4
+#define THREADS 8
 #define FACES_PER_VOXEL 6
 #define VERTS_PER_FACE 4
 #define QUADBUFFLENGTHINDEX 1
@@ -68,12 +68,41 @@ bool IsExternalBlock(int3 pos, out int dir_index)
     return false;
 }
 
+int GetBorderBlock(int dir_index, int3 pos)
+{
+    int index1d = 0;
+    switch (dir_index)
+    {
+        case(DIRECTION_X_NEG):
+            index1d = Calc1dID(uint3(pos[2], pos[1], 0));
+            break;
+        case(DIRECTION_X_POS):
+            index1d = Calc1dID(uint3(63 - pos[2], pos[1], 0));
+            break;
+        case(DIRECTION_Y_NEG):
+            index1d = Calc1dID(uint3(pos[0], pos[2], 0));
+            break;
+        case(DIRECTION_Y_POS):
+            index1d = Calc1dID(uint3(pos[0], 63 - pos[2], 0));
+            break;
+        case(DIRECTION_Z_NEG):
+            index1d = Calc1dID(uint3(63 - pos[0], pos[1], 0));
+            break;
+        case(DIRECTION_Z_POS):
+            index1d = Calc1dID(uint3(pos[0], pos[1], 0));
+            break;
+    }
+
+    int borderfacebase = dir_index * THREADS * DispatchArgs[0] * THREADS * DispatchArgs[1];
+    return BorderBlockMap[borderfacebase + index1d];
+}
+
 int GetBlock(int3 local_pos)
 {
     int dir_index;
     if (IsExternalBlock(local_pos, dir_index))
     {
-        return 0;
+        return GetBorderBlock(dir_index, local_pos);
     }
     else
     {
@@ -81,20 +110,6 @@ int GetBlock(int3 local_pos)
 
         return BlockMap[index1d];
     }
-}
-
-int GetBorderBlock(int dir_index, uint2 pos)
-{
-    int index1d;
-    switch (dir_index)
-    {
-        case(DIRECTION_X_NEG):
-            index1d = Calc1dID(uint3(pos[0], pos[0], 0));
-            break;
-    }
-    
-    int borderfacebase = dir_index * THREADS * DispatchArgs[0];
-    BorderBlockMap[borderfacebase + index1d];
 }
 
 void DrawFaceQuads(uint starting_vert_index)
