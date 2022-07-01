@@ -39,6 +39,8 @@ public class ChunkBehavior : MonoBehaviour
     private Mesh defaultMesh;
 
     private NativeArray<uint> blockMap;
+    private NativeArray<uint>[] borderBlockMaps = new NativeArray<uint>[6];
+    private bool[] borderBlockMapsIsDirty = new bool[6];
 
     void Awake()
     {
@@ -49,6 +51,10 @@ public class ChunkBehavior : MonoBehaviour
     private void OnDestroy()
     {
         if (blockMap.IsCreated) blockMap.Dispose();
+        for (int n = 0; n < 6; n++)
+        {
+            if (borderBlockMaps[n].IsCreated) borderBlockMaps[n].Dispose();
+        }
     }
 
     private void Register()
@@ -62,7 +68,6 @@ public class ChunkBehavior : MonoBehaviour
         {
             if (All.TryGetValue(index + StaticDefinitions.Directions[i], out ChunkBehavior other))
             {
-                Debug.Log("Connected neighbors");
                 neighbors[i] = other;
                 other.neighbors[i + 1 - 2 * (i % 2)] = this;
             }
@@ -93,14 +98,16 @@ public class ChunkBehavior : MonoBehaviour
         NativeArray<uint> ret = new NativeArray<uint>(WorldGenerationGlobals.ChunkSideAreas.Sum(), Allocator.Persistent);
         int index = 0;
         int n = 0;
+        Vector3Int current = Vector3Int.zero;
+
         if (neighbors[n] != null) // x-
         {
-            int x = 63;
-            for (int y = 0; y < WorldGenerationGlobals.ChunkSize[1]; y++)
+            current[0] = 63;
+            for (current[1] = 0; current[1] < WorldGenerationGlobals.ChunkSize[1]; current[1]++)
             {
-                for (int z = 0; z < WorldGenerationGlobals.ChunkSize[2]; z++)
+                for (current[2] = 0; current[2] < WorldGenerationGlobals.ChunkSize[2]; current[2]++)
                 {
-                    ret[index] = neighbors[n][x, y, z];
+                    ret[index] = neighbors[n][current[0], current[1], current[2]];
                     index++;
                 }
             }
@@ -113,12 +120,12 @@ public class ChunkBehavior : MonoBehaviour
 
         if (neighbors[n] != null) // x+
         {
-            int x = 0;
-            for (int y = 0; y < WorldGenerationGlobals.ChunkSize[1]; y++)
+            current[0] = 0;
+            for (current[1] = 0; current[1] < WorldGenerationGlobals.ChunkSize[1]; current[1]++)
             {
-                for (int z = WorldGenerationGlobals.ChunkSize[2] - 1; z >= 0; z--)
+                for (current[2] = WorldGenerationGlobals.ChunkSize[2] - 1; current[2] >= 0; current[2]--)
                 {
-                    ret[index] = neighbors[n][x, y, z];
+                    ret[index] = neighbors[n][current[0], current[1], current[2]];
                     index++;
                 }
             }
@@ -131,12 +138,12 @@ public class ChunkBehavior : MonoBehaviour
 
         if (neighbors[n] != null) // y-
         {
-            int y = 63;
-            for (int z = 0; z < WorldGenerationGlobals.ChunkSize[2]; z++)
+            current[1] = 63;
+            for (current[2] = 0; current[2] < WorldGenerationGlobals.ChunkSize[2]; current[2]++)
             {
-                for (int x = 0; x < WorldGenerationGlobals.ChunkSize[0]; x++)
+                for (current[0] = 0; current[0] < WorldGenerationGlobals.ChunkSize[0]; current[0]++)
                 {
-                    ret[index] = neighbors[n][x, y, z];
+                    ret[index] = neighbors[n][current[0], current[1], current[2]];
                     index++;
                 }
             }
@@ -149,12 +156,12 @@ public class ChunkBehavior : MonoBehaviour
 
         if (neighbors[n] != null) // y+
         {
-            int y = 0;
-            for (int z = WorldGenerationGlobals.ChunkSize[2] - 1; z >= 0; z--)
+            current[1] = 0;
+            for (current[2] = WorldGenerationGlobals.ChunkSize[2] - 1; current[2] >= 0; current[2]--)
             {
-                for (int x = 0; x < WorldGenerationGlobals.ChunkSize[0]; x++)
+                for (current[0] = 0; current[0] < WorldGenerationGlobals.ChunkSize[0]; current[0]++)
                 {
-                    ret[index] = neighbors[n][x, y, z];
+                    ret[index] = neighbors[n][current[0], current[1], current[2]];
                     index++;
                 }
             }
@@ -167,12 +174,12 @@ public class ChunkBehavior : MonoBehaviour
 
         if (neighbors[n] != null) // z-
         {
-            int z = 63;
-            for (int y = 0; y < WorldGenerationGlobals.ChunkSize[1]; y++)
+            current[2] = 63;
+            for (current[1] = 0; current[1] < WorldGenerationGlobals.ChunkSize[1]; current[1]++)
             {
-                for (int x = WorldGenerationGlobals.ChunkSize[0] - 1; x >= 0; x--)
+                for (current[0] = WorldGenerationGlobals.ChunkSize[0] - 1; current[0] >= 0; current[0]--)
                 {
-                    ret[index] = neighbors[n][x, y, z];
+                    ret[index] = neighbors[n][current[0], current[1], current[2]];
                     index++;
                 }
             }
@@ -185,12 +192,12 @@ public class ChunkBehavior : MonoBehaviour
 
         if (neighbors[n] != null) // z+
         {
-            int z = 0;
-            for (int y = 0; y < WorldGenerationGlobals.ChunkSize[1]; y++)
+            current[2] = 0;
+            for (current[1] = 0; current[1] < WorldGenerationGlobals.ChunkSize[1]; current[1]++)
             {
-                for (int x = 0; x < WorldGenerationGlobals.ChunkSize[0]; x++)
+                for (current[0] = 0; current[0] < WorldGenerationGlobals.ChunkSize[0]; current[0]++)
                 {
-                    ret[index] = neighbors[n][x, y, z];
+                    ret[index] = neighbors[n][current[0], current[1], current[2]];
                     index++;
                 }
             }
@@ -209,19 +216,40 @@ public class ChunkBehavior : MonoBehaviour
         await ModelGenerator.Singleton.GenerateBlockmap(blockMap, bounds);
     }
 
+    public async Task FetchBorderBlockmaps()
+    {
+        Vector3Int current = Vector3Int.zero;
+        for (int n = 0; n < 6; n++)
+        {
+            if (!borderBlockMaps[n].IsCreated)
+            {
+                borderBlockMaps[n] = new NativeArray<uint>(WorldGenerationGlobals.ChunkSideAreas[n], Allocator.Persistent);
+            }
+            if (neighbors[n] != null)
+            {
+                int side_index = n / 2;
+                current[side_index] = (((n + 1) % 2) * 63);
+                int axis_one = (side_index + 1) % 3;
+                int axis_two = (side_index + 2) % 3;
+                for (current[axis_one] = 0; current[axis_one] < WorldGenerationGlobals.ChunkSize[axis_one]; current[axis_one]++)
+                {
+                    for (current[axis_two] = 0; current[axis_two] < WorldGenerationGlobals.ChunkSize[axis_two]; current[axis_two]++)
+                    {
+                        borderBlockMaps[n].SetAsChunk(current[axis_one], current[axis_two], 0, neighbors[n][current[0], current[1], current[2]]);
+                    }
+                }
+            }
+        }
+    }
+
     public async Task GenerateMesh()
     {
-        Debug.Log("Creating borderblockmap");
-        NativeArray<uint> borderBlockMap = RetrieveBorderBlocks();
-        Debug.Log("Passing to mesh generator");
-        Mesh mesh = await MeshGenerator.Singleton.GenerateMeshData(blockMap, borderBlockMap);
-        Debug.Log("Returning from mesh generator");
+        await FetchBorderBlockmaps();
+        Mesh mesh = await MeshGenerator.Singleton.GenerateMeshData(blockMap, borderBlockMaps);
         meshFilter.mesh.Clear();
         meshFilter.mesh = mesh;
         meshCollider.sharedMesh = mesh;
         meshRenderer.material.mainTexture = WorldGenerationGlobals.atlas;
-        borderBlockMap.Dispose();
-        Debug.Log("Disposed borderblockmap");
     }
 
     public uint this[int x, int y, int z]

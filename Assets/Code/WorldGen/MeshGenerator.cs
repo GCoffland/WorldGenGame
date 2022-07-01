@@ -33,11 +33,11 @@ namespace WorldGeneration
 
         private SemaphoreSlim queueSem = new SemaphoreSlim(1);
 
-        public async Task<Mesh> GenerateMeshData(NativeArray<uint> blockmap, NativeArray<uint> borderblockmap)
+        public async Task<Mesh> GenerateMeshData(NativeArray<uint> blockmap, NativeArray<uint>[] borderblockmaps)
         {
             await queueSem.WaitAsync();
 
-            Singleton.SetDataAndDispatch(blockmap, borderblockmap);
+            Singleton.SetDataAndDispatch(blockmap, borderblockmaps);
             await Singleton.AsyncWaitForData();
             Mesh mesh = Singleton.CreateMeshFromCurrentData();
 
@@ -88,7 +88,7 @@ namespace WorldGeneration
             quadbuffer = new ComputeBuffer(WorldGenerationGlobals.MaxPossibleVerticies / 4, 16, ComputeBufferType.Counter | ComputeBufferType.Structured);
             bufferlengthsbuffer = new ComputeBuffer(2, 4);
             blockmapbuffer = new ComputeBuffer(WorldGenerationGlobals.BlockMapLength, 4, ComputeBufferType.Default);
-            borderblockmapbuffer = new ComputeBuffer(WorldGenerationGlobals.ChunkSideAreas.Sum(), 4, ComputeBufferType.Default);
+            borderblockmapbuffer = new ComputeBuffer(WorldGenerationGlobals.ChunkSideAreas.Sum(), sizeof(uint), ComputeBufferType.Default);
             blockUVsbuffer = new ComputeBuffer(blockUVs.Length, 8, ComputeBufferType.Default);
 
             computeShader.SetBuffer(0, "VertexResult", vertexbuffer);
@@ -110,12 +110,17 @@ namespace WorldGeneration
             bufferlengthsbuffer.SetData<int>(new List<int>(new int[] { 0, 0 }));
         }
 
-        private void SetDataAndDispatch(in NativeArray<uint> blockmap, in NativeArray<uint> borderblockmap)
+        private void SetDataAndDispatch(in NativeArray<uint> blockmap, in NativeArray<uint>[] borderblockmaps)
         {
             ResetCounters();
 
             blockmapbuffer.SetData(blockmap);
-            borderblockmapbuffer.SetData(borderblockmap);
+            int buffer_index = 0;
+            for(int i = 0; i < borderblockmaps.Length; i++)
+            {
+                borderblockmapbuffer.SetData(borderblockmaps[i], 0, buffer_index, borderblockmaps[i].Length);
+                buffer_index += borderblockmaps[i].Length;
+            }
             computeShader.SetInts("DispatchArgs", dispatchArgs);
 
             computeShader.Dispatch(0, dispatchArgs[0], dispatchArgs[1], dispatchArgs[2]);
