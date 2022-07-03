@@ -115,8 +115,9 @@ public class ChunkBehavior : MonoBehaviour
 
     public async Task GenerateModel()
     {
-        blockMap = new NativeArray<uint>(WorldGenerationGlobals.BlockMapLength, Allocator.Persistent);
-        await ModelGenerator.Singleton.GenerateBlockmap(blockMap, bounds);
+        NativeArray<uint> tempBlockMap = new NativeArray<uint>(WorldGenerationGlobals.BlockMapLength, Allocator.Persistent);
+        await ModelGenerator.Singleton.GenerateBlockmap(tempBlockMap, bounds);
+        blockMap = tempBlockMap;
     }
 
     public void FetchBorderBlockmap(DIRECTION dir)
@@ -126,7 +127,7 @@ public class ChunkBehavior : MonoBehaviour
         {
             borderBlockMaps[(int)dir] = new NativeArray<uint>(WorldGenerationGlobals.ChunkSideAreas[(int)dir], Allocator.Persistent);
         }
-        if (neighbors[(int)dir] != null)
+        if (neighbors[(int)dir] != null && neighbors[(int)dir].blockMap.IsCreated)
         {
             int side_index = (int)dir / 2;
             current[side_index] = ((((int)dir + 1) % 2) * 63);
