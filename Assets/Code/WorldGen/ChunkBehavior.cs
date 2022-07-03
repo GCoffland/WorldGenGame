@@ -15,7 +15,7 @@ public class ChunkBehavior : MonoBehaviour
 {
     public static ConcurrentDictionary<Vector3Int, ChunkBehavior> All = new ConcurrentDictionary<Vector3Int, ChunkBehavior>();
 
-    public ChunkBehavior[] neighbors = new ChunkBehavior[8];
+    public ChunkBehavior[] neighbors = new ChunkBehavior[6];
 
     public Vector3Int index
     {
@@ -40,7 +40,7 @@ public class ChunkBehavior : MonoBehaviour
 
     private NativeArray<uint> blockMap;
     private NativeArray<uint>[] borderBlockMaps = new NativeArray<uint>[6];
-    private bool[] borderBlockMapsIsDirty = new bool[6];
+    private bool[] borderBlockMapIsClean = new bool[6];
 
     void Awake()
     {
@@ -70,6 +70,7 @@ public class ChunkBehavior : MonoBehaviour
             {
                 neighbors[i] = other;
                 other.neighbors[i + 1 - 2 * (i % 2)] = this;
+                other.borderBlockMapIsClean[i + 1 - 2 * (i % 2)] = false;
             }
         }
     }
@@ -93,121 +94,23 @@ public class ChunkBehavior : MonoBehaviour
         meshFilter.mesh.bounds = new Bounds(bounds.size / 2, bounds.size);
     }
 
-    public NativeArray<uint> RetrieveBorderBlocks() //  use iterators instead?
+    private bool IsBorderBlock(Vector3Int pos, out DIRECTION dir_index)
     {
-        NativeArray<uint> ret = new NativeArray<uint>(WorldGenerationGlobals.ChunkSideAreas.Sum(), Allocator.Persistent);
-        int index = 0;
-        int n = 0;
-        Vector3Int current = Vector3Int.zero;
-
-        if (neighbors[n] != null) // x-
+        for (int i = 0; i < 3; i++)
         {
-            current[0] = 63;
-            for (current[1] = 0; current[1] < WorldGenerationGlobals.ChunkSize[1]; current[1]++)
+            if (pos[i] <= 0)
             {
-                for (current[2] = 0; current[2] < WorldGenerationGlobals.ChunkSize[2]; current[2]++)
-                {
-                    ret[index] = neighbors[n][current[0], current[1], current[2]];
-                    index++;
-                }
+                dir_index = (DIRECTION)((int)i * 2);
+                return true;
+            }
+            else if (pos[i] >= WorldGenerationGlobals.ChunkSize[i] - 1)
+            {
+                dir_index = (DIRECTION)((int)i * 2) + 1;
+                return true;
             }
         }
-        else
-        {
-            index += WorldGenerationGlobals.ChunkSideAreas[n];
-        }
-        n++;
-
-        if (neighbors[n] != null) // x+
-        {
-            current[0] = 0;
-            for (current[1] = 0; current[1] < WorldGenerationGlobals.ChunkSize[1]; current[1]++)
-            {
-                for (current[2] = WorldGenerationGlobals.ChunkSize[2] - 1; current[2] >= 0; current[2]--)
-                {
-                    ret[index] = neighbors[n][current[0], current[1], current[2]];
-                    index++;
-                }
-            }
-        }
-        else
-        {
-            index += WorldGenerationGlobals.ChunkSideAreas[n];
-        }
-        n++;
-
-        if (neighbors[n] != null) // y-
-        {
-            current[1] = 63;
-            for (current[2] = 0; current[2] < WorldGenerationGlobals.ChunkSize[2]; current[2]++)
-            {
-                for (current[0] = 0; current[0] < WorldGenerationGlobals.ChunkSize[0]; current[0]++)
-                {
-                    ret[index] = neighbors[n][current[0], current[1], current[2]];
-                    index++;
-                }
-            }
-        }
-        else
-        {
-            index += WorldGenerationGlobals.ChunkSideAreas[n];
-        }
-        n++;
-
-        if (neighbors[n] != null) // y+
-        {
-            current[1] = 0;
-            for (current[2] = WorldGenerationGlobals.ChunkSize[2] - 1; current[2] >= 0; current[2]--)
-            {
-                for (current[0] = 0; current[0] < WorldGenerationGlobals.ChunkSize[0]; current[0]++)
-                {
-                    ret[index] = neighbors[n][current[0], current[1], current[2]];
-                    index++;
-                }
-            }
-        }
-        else
-        {
-            index += WorldGenerationGlobals.ChunkSideAreas[n];
-        }
-        n++;
-
-        if (neighbors[n] != null) // z-
-        {
-            current[2] = 63;
-            for (current[1] = 0; current[1] < WorldGenerationGlobals.ChunkSize[1]; current[1]++)
-            {
-                for (current[0] = WorldGenerationGlobals.ChunkSize[0] - 1; current[0] >= 0; current[0]--)
-                {
-                    ret[index] = neighbors[n][current[0], current[1], current[2]];
-                    index++;
-                }
-            }
-        }
-        else
-        {
-            index += WorldGenerationGlobals.ChunkSideAreas[n];
-        }
-        n++;
-
-        if (neighbors[n] != null) // z+
-        {
-            current[2] = 0;
-            for (current[1] = 0; current[1] < WorldGenerationGlobals.ChunkSize[1]; current[1]++)
-            {
-                for (current[0] = 0; current[0] < WorldGenerationGlobals.ChunkSize[0]; current[0]++)
-                {
-                    ret[index] = neighbors[n][current[0], current[1], current[2]];
-                    index++;
-                }
-            }
-        }
-        else
-        {
-            index += WorldGenerationGlobals.ChunkSideAreas[n];
-        }
-        n++;
-        return ret;
+        dir_index = (DIRECTION)(-1);
+        return false;
     }
 
     public async Task GenerateModel()
@@ -216,35 +119,44 @@ public class ChunkBehavior : MonoBehaviour
         await ModelGenerator.Singleton.GenerateBlockmap(blockMap, bounds);
     }
 
-    public async Task FetchBorderBlockmaps()
+    public void FetchBorderBlockmap(DIRECTION dir)
     {
         Vector3Int current = Vector3Int.zero;
+        if (!borderBlockMaps[(int)dir].IsCreated)
+        {
+            borderBlockMaps[(int)dir] = new NativeArray<uint>(WorldGenerationGlobals.ChunkSideAreas[(int)dir], Allocator.Persistent);
+        }
+        if (neighbors[(int)dir] != null)
+        {
+            int side_index = (int)dir / 2;
+            current[side_index] = ((((int)dir + 1) % 2) * 63);
+            int axis_one = (side_index + 1) % 3;
+            int axis_two = (side_index + 2) % 3;
+            for (current[axis_one] = 0; current[axis_one] < WorldGenerationGlobals.ChunkSize[axis_one]; current[axis_one]++)
+            {
+                for (current[axis_two] = 0; current[axis_two] < WorldGenerationGlobals.ChunkSize[axis_two]; current[axis_two]++)
+                {
+                    borderBlockMaps[(int)dir].SetAsChunk(current[axis_one], current[axis_two], 0, neighbors[(int)dir][current[0], current[1], current[2]]);
+                }
+            }
+        }
+    }
+
+    public void TryFetchBorderBlockmaps()
+    {
         for (int n = 0; n < 6; n++)
         {
-            if (!borderBlockMaps[n].IsCreated)
+            if (!borderBlockMapIsClean[n])
             {
-                borderBlockMaps[n] = new NativeArray<uint>(WorldGenerationGlobals.ChunkSideAreas[n], Allocator.Persistent);
-            }
-            if (neighbors[n] != null)
-            {
-                int side_index = n / 2;
-                current[side_index] = (((n + 1) % 2) * 63);
-                int axis_one = (side_index + 1) % 3;
-                int axis_two = (side_index + 2) % 3;
-                for (current[axis_one] = 0; current[axis_one] < WorldGenerationGlobals.ChunkSize[axis_one]; current[axis_one]++)
-                {
-                    for (current[axis_two] = 0; current[axis_two] < WorldGenerationGlobals.ChunkSize[axis_two]; current[axis_two]++)
-                    {
-                        borderBlockMaps[n].SetAsChunk(current[axis_one], current[axis_two], 0, neighbors[n][current[0], current[1], current[2]]);
-                    }
-                }
+                FetchBorderBlockmap((DIRECTION)n);
+                borderBlockMapIsClean[n] = true;
             }
         }
     }
 
     public async Task GenerateMesh()
     {
-        await FetchBorderBlockmaps();
+        TryFetchBorderBlockmaps();
         Mesh mesh = await MeshGenerator.Singleton.GenerateMeshData(blockMap, borderBlockMaps);
         meshFilter.mesh.Clear();
         meshFilter.mesh = mesh;
@@ -262,6 +174,10 @@ public class ChunkBehavior : MonoBehaviour
         {
             blockMap.SetAsChunk(x, y, z, value);
             _ = GenerateMesh();
+            if(IsBorderBlock(new Vector3Int(x, y, z), out DIRECTION dir))
+            {
+                neighbors[(int)dir].borderBlockMapIsClean[(int)dir + 1 - 2 * ((int)dir % 2)] = false;
+            }
         }
     }
 }
