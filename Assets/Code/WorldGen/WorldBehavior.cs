@@ -10,7 +10,7 @@ using UnityEngine.Pool;
 public class WorldBehavior : MonoBehaviour
 {
     public static WorldBehavior Singleton;
-    public ChunkBehavior chunkPrefab;
+    public Chunk chunkPrefab;
     public GameObject[] players;
 
     // Start is called before the first frame update
@@ -25,24 +25,32 @@ public class WorldBehavior : MonoBehaviour
         {
             Vector3Int pos = players[i].transform.position.RoundToChunkPos();
             Vector3Int index = pos.WorldPosToChunkIndex();
-            if (!ChunkBehavior.All.ContainsKey(index))
+            if (!Chunk.All.ContainsKey(index))
             {
-                ChunkBehavior chunk = SpawnChunk(pos);
+                Chunk chunk = SpawnChunk(pos);
                 _ = LoadChunk(chunk);
             }
         }
     }
 
-    public ChunkBehavior SpawnChunk(Vector3Int pos)
+    public Chunk SpawnChunk(Vector3Int pos)
     {
-        ChunkBehavior chunk = Instantiate<ChunkBehavior>(chunkPrefab, pos, Quaternion.identity, transform);
+        Chunk chunk = Instantiate<Chunk>(chunkPrefab, pos, Quaternion.identity, transform);
         return chunk;
 
     }
 
-    public async Task LoadChunk(ChunkBehavior chunk)
+    public async Task LoadChunk(Chunk chunk)
     {
-        await chunk.GenerateModel();
-        await chunk.GenerateMesh();
+        Debug.Log("Loading Chunk: " + chunk.index);
+        try
+        {
+            await chunk.model.GenerateModel();
+            await chunk.renderer.GenerateMesh();
+        }
+        catch (Exception ex)
+        {
+            Debug.LogException(ex);
+        }
     }
 }

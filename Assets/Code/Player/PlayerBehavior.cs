@@ -82,7 +82,7 @@ public class PlayerBehavior : MonoBehaviour
             if(blockSelector.currentBlock != 0)
             {
                 Vector3Int index = blockSelector.currentBlockIndex;
-                blockSelector.currentChunk[index.x, index.y, index.z] = 0;
+                blockSelector.currentChunk.model.SetBlock(index.x, index.y, index.z, 0);
             }
         }
     }

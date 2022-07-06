@@ -18,7 +18,7 @@ public class BlockSelector : MonoBehaviour
         get;
         private set;
     }
-    public ChunkBehavior currentChunk
+    public Chunk currentChunk
     {
         get;
         private set;
@@ -47,9 +47,9 @@ public class BlockSelector : MonoBehaviour
         }
         Vector3Int globalBlockPosition = Vector3Int.FloorToInt(rh.point - (rh.normal * 0.001f));
         Vector3Int localBlockPosition = globalBlockPosition.WorldPosToBlockIndex();
-        currentChunk = rh.collider.GetComponent<ChunkBehavior>();
+        currentChunk = rh.collider.GetComponent<Chunk>();
         currentBlockIndex = localBlockPosition;
-        currentBlock = currentChunk[localBlockPosition.x, localBlockPosition.y, localBlockPosition.z];
+        currentBlock = currentChunk.model.GetBlock(localBlockPosition.x, localBlockPosition.y, localBlockPosition.z);
         renderer.enabled = true;
         transform.position = globalBlockPosition + (Vector3.one / 2);
     }
