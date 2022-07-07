@@ -40,9 +40,36 @@ namespace WorldGeneration
                         float noise_val = cellular_noise.GetNoise(x + globalBounds.position.x, y + globalBounds.position.y, z + globalBounds.position.z);
                         if (noise_val < 0.25f)
                         {
-                            block_type = 1;
+                            if(noise_val > 0.0f)
+                            {
+                                block_type = (uint)WorldGenerationGlobals.blockIdByName["Dirt"];
+                            }
+                            else if (noise_val >= -1f)
+                            {
+                                block_type = (uint)WorldGenerationGlobals.blockIdByName["Stone"];
+                            }
+                            else
+                            {
+                                block_type = (uint)WorldGenerationGlobals.blockIdByName["Debug"];
+                            }
                         }
                         blockMap.SetAsChunk(x, y, z, block_type);
+                    }
+                }
+            }
+
+            for (int x = 0; x < WorldGenerationGlobals.ChunkSize.x; x++)
+            {
+                for (int y = 0; y < WorldGenerationGlobals.ChunkSize.y; y++)
+                {
+                    for (int z = 0; z < WorldGenerationGlobals.ChunkSize.z; z++)
+                    {
+                        if (y < WorldGenerationGlobals.ChunkSize.z - 1 &&
+                            blockMap.GetAsChunk(x, y, z) == (uint)WorldGenerationGlobals.blockIdByName["Dirt"] &&
+                            blockMap.GetAsChunk(x, y + 1, z) == 0)
+                        {
+                            blockMap.SetAsChunk(x, y, z, (uint)WorldGenerationGlobals.blockIdByName["Grass"]);
+                        }
                     }
                 }
             }
