@@ -62,6 +62,16 @@ public class Chunk : MonoBehaviour
 
     private void UnRegister()
     {
-        throw new NotImplementedException();
+        if (!All.TryRemove(index, out Chunk val))
+        {
+            throw new InvalidOperationException("Chunk was not registered");
+        }
+        for (int i = 0; i < StaticDefinitions.Directions.Length; i++)
+        {
+            if(neighbors[i] != null && neighbors[i].neighbors[i + 1 - 2 * (i % 2)] == this)
+            {
+                neighbors[i].neighbors[i + 1 - 2 * (i % 2)] = null;
+            }
+        }
     }
 }
