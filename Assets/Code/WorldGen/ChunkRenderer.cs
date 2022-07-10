@@ -25,25 +25,12 @@ public class ChunkRenderer : MonoBehaviour
     private Mesh defaultMesh;
 
     private NativeArray<uint>[] borderBlockMaps = new NativeArray<uint>[6];
-    private bool[] borderBlockMapIsClean = new bool[6];
-    private Task meshGenTask;
+    private bool[] borderBlockMapDirtyBits = Enumerable.Repeat(true, 6).ToArray();
 
     void Awake()
     {
         SetDefaultMesh();
-        chunk.model.OnBlockChanged += genMeshHelper;
-        chunk.model.OnModelGenerated += onModelGenerated;
-    }
-
-    private bool modelChangedThisFrame = false;
-
-    private void LateUpdate()
-    {
-        if (modelChangedThisFrame)
-        {
-            meshGenTask = GenerateMesh();
-            modelChangedThisFrame = false;
-        }
+        chunk.model.OnModelChanged += onModelChanged;
     }
 
     private void OnDestroy()
@@ -54,33 +41,42 @@ public class ChunkRenderer : MonoBehaviour
         }
     }
 
-    private void onModelGenerated()
+    private void onModelChanged(BoundsInt bounds)
     {
-        for (int i = 0; i < StaticDefinitions.Directions.Length; i++)  // Nofiy neighbors
+        _ = GenerateMesh();
+        foreach (DIRECTION d in GetBordersContained(bounds))
         {
-            if (chunk.neighbors[i] != null)
+            updateNeighborBorderBlockmap(d);
+        }
+    }
+
+    public List<DIRECTION> GetBordersContained(BoundsInt container)
+    {
+        List<DIRECTION> dirs = new List<DIRECTION>();
+        for (int i = 0; i < 3; i++)
+        {
+            if (container.min[i] <= 0)
             {
-                notifyNeighborOfChange((DIRECTION)i);
+                dirs.Add((DIRECTION)(i * 2));
+            }
+            if (container.max[i] >= WorldGenerationGlobals.ChunkSize[i])
+            {
+                dirs.Add((DIRECTION)(i * 2 + 1));
             }
         }
+        return dirs;
     }
 
-    private void genMeshHelper(int x, int y, int z)
+    private void updateNeighborBorderBlockmap(DIRECTION dir)
     {
-        modelChangedThisFrame = true;
-        if (ChunkModel.IsBorderBlock(new Vector3Int(x, y, z), out DIRECTION dir) && chunk.neighbors[(int)dir] != null)
+        if(chunk.neighbors[(int)dir] != null)
         {
-            notifyNeighborOfChange(dir);
+            chunk.neighbors[(int)dir].renderer.borderBlockMapDirtyBits[(int)dir / 2 * 2 + 1 - (int)dir % 2] = true;
+            _ = chunk.neighbors[(int)dir].renderer.GenerateMesh();
         }
     }
 
-    private void notifyNeighborOfChange(DIRECTION dir)
-    {
-        chunk.neighbors[(int)dir].renderer.borderBlockMapIsClean[(int)dir + 1 - 2 * ((int)dir % 2)] = false;
-        _ = chunk.neighbors[(int)dir].renderer.GenerateMesh();
-    }
-
-    public void TryFetchBorderBlockmaps()
+    public void TryFetchBorderBlockmapsIfNeeded()
     {
         for (int n = 0; n < StaticDefinitions.Directions.Length; n++)
         {
@@ -88,10 +84,10 @@ public class ChunkRenderer : MonoBehaviour
             {
                 borderBlockMaps[n] = new NativeArray<uint>(WorldGenerationGlobals.ChunkSideAreas[n], Allocator.Persistent);
             }
-            if (!borderBlockMapIsClean[n] && chunk.neighbors[n] != null && chunk.neighbors[n].model.blockMap.IsCreated)
+            if (borderBlockMapDirtyBits[n] && chunk.neighbors[n] != null && chunk.neighbors[n].model.blockMap.IsCreated)
             {
                 chunk.model.FetchBorderBlockmap((DIRECTION)n, ref borderBlockMaps[n]);
-                borderBlockMapIsClean[n] = true;
+                borderBlockMapDirtyBits[n] = false;
             }
         }
     }
@@ -112,7 +108,9 @@ public class ChunkRenderer : MonoBehaviour
     public async Task GenerateMesh()
     {
         Debug.Log("Generating Mesh for Chunk: " + chunk.index);
-        TryFetchBorderBlockmaps();
+        if (!chunk.model.blockMap.IsCreated)
+            throw new InvalidOperationException("Cannot generate a mesh for a chunk without a valid model");
+        TryFetchBorderBlockmapsIfNeeded();
         Mesh mesh = await MeshGenerator.Singleton.GenerateMeshData(chunk.model.blockMap, borderBlockMaps);
         meshFilter.mesh.Clear();
         meshFilter.mesh = mesh;

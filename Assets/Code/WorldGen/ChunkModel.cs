@@ -13,14 +13,12 @@ using System.Linq;
 
 public class ChunkModel : MonoBehaviour
 {
-    public event Action<int, int, int> OnBlockChanged;
-    public event Action OnModelGenerated;
+    public event Action<BoundsInt> OnModelChanged;
 
     [SerializeField]
     private Chunk chunk;
 
     public NativeArray<uint> blockMap { get; private set; }
-
 
     private void OnDestroy()
     {
@@ -29,29 +27,11 @@ public class ChunkModel : MonoBehaviour
 
     public async Task GenerateModel()
     {
+        Debug.Log("Generating Model for chunk: " + chunk.index);
         NativeArray<uint> tempBlockMap = new NativeArray<uint>(WorldGenerationGlobals.BlockMapLength, Allocator.Persistent);
         await ModelGenerator.Singleton.GenerateBlockmap(tempBlockMap, chunk.bounds);
         blockMap = tempBlockMap;
-        OnModelGenerated?.Invoke();
-    }
-
-    public static bool IsBorderBlock(Vector3Int pos, out DIRECTION dir_index)
-    {
-        for (int i = 0; i < 3; i++)
-        {
-            if (pos[i] <= 0)
-            {
-                dir_index = (DIRECTION)((int)i * 2);
-                return true;
-            }
-            else if (pos[i] >= WorldGenerationGlobals.ChunkSize[i] - 1)
-            {
-                dir_index = (DIRECTION)((int)i * 2) + 1;
-                return true;
-            }
-        }
-        dir_index = (DIRECTION)(-1);
-        return false;
+        OnModelChanged?.Invoke(new BoundsInt(Vector3Int.zero, chunk.bounds.size));
     }
 
     public void FetchBorderBlockmap(DIRECTION dir, ref NativeArray<uint> borderBlockMap)
@@ -78,6 +58,6 @@ public class ChunkModel : MonoBehaviour
     public void SetBlock(int x, int y, int z, uint block_type)
     {
         blockMap.SetAsChunk(x, y, z, block_type);
-        OnBlockChanged?.Invoke(x, y, z);
+        OnModelChanged?.Invoke(new BoundsInt(new Vector3Int(x, y, z), Vector3Int.one));
     }
 }
