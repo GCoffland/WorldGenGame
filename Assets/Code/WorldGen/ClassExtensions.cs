@@ -135,5 +135,10 @@ namespace WorldGeneration
                 Array.Copy(temp, 0, arr, arr.Length - (group_size * (i + 1)), group_size);
             }
         }
+
+        public static int GetVolume(this BoundsInt bounds)
+        {
+            return bounds.size[0] * bounds.size[1] * bounds.size[2];
+        }
     }
 }
