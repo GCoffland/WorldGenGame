@@ -8,6 +8,7 @@ using WorldGeneration;
 using System.Threading.Tasks;
 using System.Linq;
 using System.Collections.Concurrent;
+using Unity.Jobs;
 
 namespace WorldGeneration
 {
@@ -39,7 +40,7 @@ namespace WorldGeneration
 
             Singleton.SetDataAndDispatch(blockmap, borderblockmaps);
             await Singleton.AsyncWaitForData();
-            Mesh mesh = Singleton.CreateMeshFromCurrentData();
+            Mesh mesh = await Singleton.CreateMeshFromCurrentData();
 
             queueSem.Release(1);
             return mesh;
@@ -148,7 +149,7 @@ namespace WorldGeneration
             }
         }
 
-        private Mesh CreateMeshFromCurrentData()
+        private async Task<Mesh> CreateMeshFromCurrentData()
         {
             Mesh mesh = new Mesh();
             mesh.Clear();
@@ -158,8 +159,28 @@ namespace WorldGeneration
             mesh.SetIndexBufferData(Quads, 0, 0, BufferCounts[1], flags: (MeshUpdateFlags)15);
             mesh.SetSubMesh(0, new SubMeshDescriptor(0, BufferCounts[1], MeshTopology.Quads));
             mesh.RecalculateBounds();
-            //Physics.BakeMesh(mesh.GetInstanceID(), true);      // can be called manually and multithreaded
+
+            BakeMeshJob job = new BakeMeshJob(mesh.GetInstanceID());
+            JobHandle handle = job.Schedule();
+            while (!handle.IsCompleted) { await Task.Yield(); }
+            handle.Complete();
+
             return mesh;
+        }
+
+        internal struct BakeMeshJob : IJob
+        {
+            private int meshId;
+
+            internal BakeMeshJob(int meshId)
+            {
+                this.meshId = meshId;
+            }
+
+            public void Execute()
+            {
+                Physics.BakeMesh(meshId, false);
+            }
         }
 
         private void ReleaseResources()
