@@ -33,6 +33,11 @@ public class ChunkRenderer : MonoBehaviour
         chunk.model.OnModelChanged += onModelChanged;
     }
 
+    private void Start()
+    {
+        
+    }
+
     private void OnDestroy()
     {
         for (int n = 0; n < 6; n++)
@@ -43,7 +48,8 @@ public class ChunkRenderer : MonoBehaviour
 
     private void onModelChanged(BoundsInt bounds)
     {
-        _ = GenerateMesh();
+        if (enabled)
+            _ = GenerateMesh();
         foreach (DIRECTION d in GetBordersContained(bounds))
         {
             updateNeighborBorderBlockmap(d);
@@ -72,7 +78,8 @@ public class ChunkRenderer : MonoBehaviour
         if(chunk.neighbors[(int)dir] != null)
         {
             chunk.neighbors[(int)dir].renderer.borderBlockMapDirtyBits[(int)dir / 2 * 2 + 1 - (int)dir % 2] = true;
-            _ = chunk.neighbors[(int)dir].renderer.GenerateMesh();
+            if (chunk.neighbors[(int)dir].renderer.enabled)
+                _ = chunk.neighbors[(int)dir].renderer.GenerateMesh();
         }
     }
 
